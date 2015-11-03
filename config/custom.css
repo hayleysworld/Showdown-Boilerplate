@@ -1,0 +1,23 @@
+body {
+    background: url("http://orig02.deviantart.net/52cd/f/2010/066/8/0/swinub_by_phar0s.png");
+  }
+ 
+#header{background:url("http://oi60.tinypic.com/21ltzl2.jpg")}
+ 
+ 
+.userlist {
+background: #000 url("http://backgrounds.funmunch.com/background/christmas-background-015.gif");
+border-right: #000;
+}
+ 
+.chat-log {
+    background: #E0F8F7 url("http://media-cerulean.cursecdn.com/avatars/thumbnails/320/27/215/199/220.png") top right no-repeat;
+    border-bottom: 1px solid #0404B4;
+    border-left: 1px solid #0404B4;
+}
+ 
+.pm-log {
+min-height: 100px;
+max-height: 300px;
+background: #FFF url("http://calobeedoodles.com/wp-content/uploads/2009/04/snowflakes.jpg") no-repeat;
+}
