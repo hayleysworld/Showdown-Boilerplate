@@ -1,18 +1,27 @@
 /**
- * Ladder library
+ * Main server ladder library
  * Pokemon Showdown - http://pokemonshowdown.com/
  *
- * This file handles ladder rating retrieval.
+ * This file handles ladders for the main server on
+ * play.pokemonshowdown.com.
+ *
+ * Ladders for all other servers is handled by ladders.js.
+ *
+ * Matchmaking is currently still implemented in rooms.js.
  *
  * @license MIT license
  */
 
-/* global Ladders: true */
-var Ladders = module.exports = getLadder;
+'use strict';
+
+let Ladders = module.exports = getLadder;
 
 function getLadder(formatid) {
 	return new Ladder(formatid);
 }
+
+Ladders.get = Ladders;
+Ladders.formatsListPrefix = '';
 
 function Ladder(formatid) {
 	this.formatid = toId(formatid);
@@ -23,22 +32,22 @@ Ladder.prototype.getTop = function () {
 };
 
 Ladder.prototype.getRating = function (userid) {
-	var formatid = this.formatid;
-	var user = Users.getExact(userid);
+	let formatid = this.formatid;
+	let user = Users.getExact(userid);
 	if (user && user.mmrCache[formatid]) {
 		return Promise.resolve(user.mmrCache[formatid]);
 	}
-	return new Promise(function (resolve, reject) {
+	return new Promise((resolve, reject) => {
 		LoginServer.request('mmr', {
 			format: formatid,
-			user: userid
-		}, function (data, statusCode, error) {
+			user: userid,
+		}, (data, statusCode, error) => {
 			if (!data) return resolve(1000);
 			if (data.errorip) {
 				return resolve(1000);
 			}
 
-			var mmr = parseInt(data, 10);
+			let mmr = parseInt(data);
 			if (isNaN(mmr)) return resolve(1000);
 			if (user.userid !== userid) return reject(new Error("Expired rating"));
 
@@ -49,16 +58,16 @@ Ladder.prototype.getRating = function (userid) {
 };
 
 Ladder.prototype.updateRating = function (p1name, p2name, p1score, room) {
-	var formatid = this.formatid;
-	var p1rating, p2rating;
+	let formatid = this.formatid;
+	let p1rating, p2rating;
 	room.update();
 	room.send('||Ladder updating...');
 	LoginServer.request('ladderupdate', {
 		p1: p1name,
 		p2: p2name,
 		score: p1score,
-		format: formatid
-	}, function (data, statusCode, error) {
+		format: formatid,
+	}, (data, statusCode, error) => {
 		if (!room.battle) {
 			console.log('room expired before ladder update was received');
 			return;
@@ -80,22 +89,22 @@ Ladder.prototype.updateRating = function (p1name, p2name, p1score, room) {
 				p1rating = data.p1rating;
 				p2rating = data.p2rating;
 
-				var oldacre = Math.round(p1rating.oldacre);
-				var acre = Math.round(p1rating.acre);
-				var reasons = '' + (acre - oldacre) + ' for ' + (p1score > 0.9 ? 'winning' : (p1score < 0.1 ? 'losing' : 'tying'));
+				let oldelo = Math.round(p1rating.oldelo);
+				let elo = Math.round(p1rating.elo);
+				let reasons = '' + (elo - oldelo) + ' for ' + (p1score > 0.9 ? 'winning' : (p1score < 0.1 ? 'losing' : 'tying'));
 				if (reasons.charAt(0) !== '-') reasons = '+' + reasons;
-				room.addRaw(Tools.escapeHTML(p1name) + '\'s rating: ' + oldacre + ' &rarr; <strong>' + acre + '</strong><br />(' + reasons + ')');
+				room.addRaw(Tools.escapeHTML(p1name) + '\'s rating: ' + oldelo + ' &rarr; <strong>' + elo + '</strong><br />(' + reasons + ')');
 
-				oldacre = Math.round(p2rating.oldacre);
-				acre = Math.round(p2rating.acre);
-				reasons = '' + (acre - oldacre) + ' for ' + (p1score > 0.9 ? 'losing' : (p1score < 0.1 ? 'winning' : 'tying'));
+				oldelo = Math.round(p2rating.oldelo);
+				elo = Math.round(p2rating.elo);
+				reasons = '' + (elo - oldelo) + ' for ' + (p1score > 0.9 ? 'losing' : (p1score < 0.1 ? 'winning' : 'tying'));
 				if (reasons.charAt(0) !== '-') reasons = '+' + reasons;
-				room.addRaw(Tools.escapeHTML(p2name) + '\'s rating: ' + oldacre + ' &rarr; <strong>' + acre + '</strong><br />(' + reasons + ')');
+				room.addRaw(Tools.escapeHTML(p2name) + '\'s rating: ' + oldelo + ' &rarr; <strong>' + elo + '</strong><br />(' + reasons + ')');
 
-				var p1 = Users.getExact(p1name);
-				if (p1) p1.mmrCache[formatid] = +p1rating.acre;
-				var p2 = Users.getExact(p2name);
-				if (p2) p2.mmrCache[formatid] = +p2rating.acre;
+				let p1 = Users.getExact(p1name);
+				if (p1) p1.mmrCache[formatid] = +p1rating.elo;
+				let p2 = Users.getExact(p2name);
+				if (p2) p2.mmrCache[formatid] = +p2rating.elo;
 				room.update();
 			} catch (e) {
 				room.addRaw('There was an error calculating rating changes.');
@@ -108,4 +117,3 @@ Ladder.prototype.updateRating = function (p1name, p2name, p1score, room) {
 		}
 	});
 };
-

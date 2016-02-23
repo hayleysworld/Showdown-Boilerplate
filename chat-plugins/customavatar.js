@@ -1,6 +1,8 @@
-var fs = require('fs');
-var path = require('path');
-var request = require('request');
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const request = require('request');
 
 const AVATAR_PATH = path.join(__dirname, '../config/avatars/');
 
@@ -12,7 +14,7 @@ function download_image(image_url, name, extension) {
 		})
 		.on('response', function (response) {
 			if (response.statusCode !== 200) return;
-			var type = response.headers['content-type'].split('/');
+			const type = response.headers['content-type'].split('/');
 			if (type[0] !== 'image') return;
 
 			response.pipe(fs.createWriteStream(AVATAR_PATH + name + extension));
@@ -21,12 +23,13 @@ function download_image(image_url, name, extension) {
 
 function load_custom_avatars() {
 	fs.readdir(AVATAR_PATH, function (err, files) {
+		if (!files) files = [];
 		files
 			.filter(function (file) {
 				return ['.jpg', '.png', '.gif'].indexOf(path.extname(file)) >= 0;
 			})
 			.forEach(function (file) {
-				var name = path.basename(file, path.extname(file));
+				const name = path.basename(file, path.extname(file));
 				Config.customavatars[name] = file;
 			});
 	});
@@ -39,14 +42,14 @@ exports.commands = {
 		set: function (target, room, user) {
 			if (!this.can('customavatar')) return false;
 
-			var parts = target.split(',');
+			const parts = target.split(',');
 
 			if (parts.length < 2) return this.parse('/help customavatar');
 
-			var name = toId(parts[0]);
-			var image_url = parts[1];
+			const name = toId(parts[0]);
+			const image_url = parts[1];
 			if (image_url.match(/^https?:\/\//i)) image_url = 'http://' + image_url;
-			var ext = path.extname(image_url);
+			const ext = path.extname(image_url);
 
 			if (!name || !image_url) return this.parse('/help customavatar');
 			if (['.jpg', '.png', '.gif'].indexOf(ext) < 0) {
@@ -62,8 +65,8 @@ exports.commands = {
 		delete: function (target, room, user) {
 			if (!this.can('customavatar')) return false;
 
-			var userid = toId(target);
-			var image = Config.customavatars[userid];
+			const userid = toId(target);
+			const image = Config.customavatars[userid];
 
 			if (!image) {
 				return this.errorReply("This user does not have a custom avatar");
@@ -84,9 +87,9 @@ exports.commands = {
 		'': 'help',
 		help: function (target, room, user) {
 			this.parse('/help customavatar');
-		}
+		},
 	},
 	customavatarhelp: ["Commands for /customavatar are:",
 	"/customavatar set [username], [image link] - Set a user's avatar.",
-	"/customavatar delete [username] - Delete a user's avatar."]
+	"/customavatar delete [username] - Delete a user's avatar."],
 };

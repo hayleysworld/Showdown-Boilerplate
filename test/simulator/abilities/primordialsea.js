@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Primordial Sea', function () {
 	afterEach(function () {
@@ -18,8 +20,8 @@ describe('Primordial Sea', function () {
 		battle.join('p1', 'Guest 1', 1, [{species: "Kyogre", ability: 'primordialsea', moves: ['helpinghand']}]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Blastoise", ability: 'torrent', moves: ['waterpledge']}]);
 		battle.commitDecisions();
-		var move = Tools.getMove('waterpledge');
-		var basePower = battle.runEvent('BasePower', battle.p2.active[0], battle.p1.active[0], move, move.basePower, true);
+		let move = Tools.getMove('waterpledge');
+		let basePower = battle.runEvent('BasePower', battle.p2.active[0], battle.p1.active[0], move, move.basePower, true);
 		assert.strictEqual(basePower, move.basePower);
 	});
 
@@ -47,9 +49,9 @@ describe('Primordial Sea', function () {
 			{species: "Kyogre", ability: 'drizzle', moves: ['raindance']},
 			{species: "Groudon", ability: 'drought', moves: ['sunnyday']},
 			{species: "Tyranitar", ability: 'sandstream', moves: ['sandstorm']},
-			{species: "Abomasnow", ability: 'snowwarning', moves: ['hail']}
+			{species: "Abomasnow", ability: 'snowwarning', moves: ['hail']},
 		]);
-		for (var i = 2; i <= 5; i++) {
+		for (let i = 2; i <= 5; i++) {
 			battle.choose('p1', 'switch ' + i);
 			battle.commitDecisions();
 			assert.ok(battle.isWeather('primordialsea'));
@@ -66,7 +68,7 @@ describe('Primordial Sea', function () {
 			{species: "Kingdra", ability: 'swiftswim', moves: ['focusenergy']},
 			{species: "Ludicolo", ability: 'raindish', moves: ['watersport']},
 			{species: "Toxicroak", ability: 'dryskin', moves: ['bulkup']},
-			{species: "Manaphy", ability: 'hydration', item: 'laggingtail', moves: ['rest']}
+			{species: "Manaphy", ability: 'hydration', item: 'laggingtail', moves: ['rest']},
 		]);
 		battle.p1.active[0].damage = function () {
 			if (battle.activeMove.id === 'weatherball') {
@@ -95,7 +97,7 @@ describe('Primordial Sea', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [
 			{species: "Kyogre", ability: 'primordialsea', moves: ['helpinghand']},
-			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']}
+			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Lugia", ability: 'pressure', moves: ['roost']}]);
 		battle.choose('p1', 'switch 2');
@@ -107,7 +109,7 @@ describe('Primordial Sea', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [
 			{species: "Kyogre", ability: 'primordialsea', moves: ['helpinghand']},
-			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']}
+			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Kyogre", ability: 'primordialsea', moves: ['bulkup']}]);
 		battle.choose('p1', 'switch 2');

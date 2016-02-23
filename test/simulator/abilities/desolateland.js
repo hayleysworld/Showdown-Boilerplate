@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Desolate Land', function () {
 	afterEach(function () {
@@ -18,8 +20,8 @@ describe('Desolate Land', function () {
 		battle.join('p1', 'Guest 1', 1, [{species: "Groudon", ability: 'desolateland', moves: ['helpinghand']}]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Charizard", ability: 'blaze', moves: ['firepledge']}]);
 		battle.commitDecisions();
-		var move = Tools.getMove('firepledge');
-		var basePower = battle.runEvent('BasePower', battle.p2.active[0], battle.p1.active[0], move, move.basePower, true);
+		let move = Tools.getMove('firepledge');
+		let basePower = battle.runEvent('BasePower', battle.p2.active[0], battle.p1.active[0], move, move.basePower, true);
 		assert.strictEqual(basePower, move.basePower);
 	});
 
@@ -36,8 +38,7 @@ describe('Desolate Land', function () {
 		battle.join('p1', 'Guest 1', 1, [{species: "Groudon", ability: 'desolateland', moves: ['helpinghand']}]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Blastoise", ability: 'torrent', moves: ['soak']}]);
 		battle.commitDecisions();
-		assert.strictEqual(battle.p1.active[0].typesData.length, 1);
-		assert.strictEqual(battle.p1.active[0].typesData[0].type, 'Water');
+		assert.strictEqual(battle.p1.active[0].types.join(','), 'Water');
 	});
 
 	it('should prevent moves and abilities from setting the weather to Sunny Day, Rain Dance, Sandstorm, or Hail', function () {
@@ -48,9 +49,9 @@ describe('Desolate Land', function () {
 			{species: "Kyogre", ability: 'drizzle', moves: ['raindance']},
 			{species: "Groudon", ability: 'drought', moves: ['sunnyday']},
 			{species: "Tyranitar", ability: 'sandstream', moves: ['sandstorm']},
-			{species: "Abomasnow", ability: 'snowwarning', moves: ['hail']}
+			{species: "Abomasnow", ability: 'snowwarning', moves: ['hail']},
 		]);
-		for (var i = 2; i <= 5; i++) {
+		for (let i = 2; i <= 5; i++) {
 			battle.choose('p1', 'switch ' + i);
 			battle.commitDecisions();
 			assert.ok(battle.isWeather('desolateland'));
@@ -67,7 +68,7 @@ describe('Desolate Land', function () {
 			{species: "Cherrim", ability: 'flowergift', moves: ['growth']},
 			{species: "Charizard", ability: 'solarpower', moves: ['roost']},
 			{species: "Venusaur", ability: 'chlorophyll', moves: ['growth']},
-			{species: "Toxicroak", ability: 'dryskin', moves: ['bulkup']}
+			{species: "Toxicroak", ability: 'dryskin', moves: ['bulkup']},
 		]);
 		battle.test = true;
 		battle.p1.active[0].damage = function () {
@@ -97,7 +98,7 @@ describe('Desolate Land', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [
 			{species: "Groudon", ability: 'desolateland', moves: ['helpinghand']},
-			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']}
+			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Lugia", ability: 'pressure', moves: ['roost']}]);
 		battle.choose('p1', 'switch 2');
@@ -109,7 +110,7 @@ describe('Desolate Land', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [
 			{species: "Groudon", ability: 'desolateland', moves: ['helpinghand']},
-			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']}
+			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Groudon", ability: 'desolateland', moves: ['bulkup']}]);
 		battle.choose('p1', 'switch 2');

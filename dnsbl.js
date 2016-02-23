@@ -12,28 +12,30 @@
  * @license MIT license
  */
 
+'use strict';
+
 const BLOCKLISTS = ['sbl.spamhaus.org', 'rbl.efnetrbl.org'];
 
-var dns = require('dns');
+let dns = require('dns');
 
-/* global Dnsbl: true */
-var Dnsbl = module.exports;
+let Dnsbl = module.exports;
 
-var dnsblCache = exports.cache = {
-	'127.0.0.1': false
-};
+let dnsblCache = Dnsbl.cache = new Map();
+dnsblCache.set('127.0.0.1', false);
 
 function queryDnsblLoop(ip, callback, reversedIpDot, index) {
 	if (index >= BLOCKLISTS.length) {
 		// not in any blocklist
-		callback(dnsblCache[ip] = false);
+		dnsblCache.set(ip, false);
+		callback(false);
 		return;
 	}
-	var blocklist = BLOCKLISTS[index];
-	dns.resolve4(reversedIpDot + blocklist, function (err, addresses) {
+	let blocklist = BLOCKLISTS[index];
+	dns.resolve4(reversedIpDot + blocklist, (err, addresses) => {
 		if (!err) {
 			// blocked
-			callback(dnsblCache[ip] = blocklist);
+			dnsblCache.set(ip, blocklist);
+			callback(blocklist);
 		} else {
 			// not blocked, try next blocklist
 			queryDnsblLoop(ip, callback, reversedIpDot, index + 1);
@@ -48,28 +50,28 @@ function queryDnsblLoop(ip, callback, reversedIpDot, index) {
  * if the passed IP is in a blocklist, or boolean false if the IP is
  * not in any blocklist.
  */
-exports.query = function queryDnsbl(ip, callback) {
-	if (ip in dnsblCache) {
-		callback(dnsblCache[ip]);
+Dnsbl.query = function queryDnsbl(ip, callback) {
+	if (dnsblCache.has(ip)) {
+		callback(dnsblCache.get(ip));
 		return;
 	}
-	var reversedIpDot = ip.split('.').reverse().join('.') + '.';
+	let reversedIpDot = ip.split('.').reverse().join('.') + '.';
 	queryDnsblLoop(ip, callback, reversedIpDot, 0);
 };
 
 // require cidr and dns separately for ease of hotpatching
-var cidr = require('./cidr.js');
-var rangeLeaseweb = cidr.checker('207.244.64.0/18');
-var rangeLeaseweb2 = cidr.checker('209.58.128.0/18');
-var rangeLeaseweb3 = cidr.checker('103.254.152.0/22');
-var rangeVoxility = cidr.checker('5.254.64.0/20');
-var rangeCenet = cidr.checker('27.111.64.0/21');
-var rangeQlded = cidr.checker('203.104.0.0/20');
-var rangeCathednet = cidr.checker('180.95.40.0/21');
-var rangeTelefonica = cidr.checker('181.64.0.0/14');
-var rangeTelstra = cidr.checker('101.160.0.0/11');
-var rangeStarhub = cidr.checker(['27.125.128.0/18', '101.127.0.0/17', '116.88.0.0/17', '122.11.192.0/18', '182.19.128.0/17', '182.55.0.0/16', '183.90.0.0/17', '203.116.122.0/23']);
-var rangeUltrasurf = cidr.checker('65.49.0.0/17');
+let cidr = require('./cidr.js');
+let rangeLeaseweb = cidr.checker('207.244.64.0/18');
+let rangeLeaseweb2 = cidr.checker('209.58.128.0/18');
+let rangeLeaseweb3 = cidr.checker('103.254.152.0/22');
+let rangeVoxility = cidr.checker('5.254.64.0/20');
+let rangeCenet = cidr.checker('27.111.64.0/21');
+let rangeQlded = cidr.checker('203.104.0.0/20');
+let rangeCathednet = cidr.checker('180.95.40.0/21');
+let rangeTelefonica = cidr.checker('181.64.0.0/14');
+let rangeTelstra = cidr.checker('101.160.0.0/11');
+let rangeStarhub = cidr.checker(['27.125.128.0/18', '101.127.0.0/17', '116.88.0.0/17', '122.11.192.0/18', '182.19.128.0/17', '182.55.0.0/16', '183.90.0.0/17', '203.116.122.0/23']);
+let rangeUltrasurf = cidr.checker('65.49.0.0/17');
 
 Dnsbl.reverse = function reverseDns(ip, callback) {
 	if (ip) {
@@ -178,7 +180,7 @@ Dnsbl.reverse = function reverseDns(ip, callback) {
 			return;
 		}
 	}
-	return require('dns').reverse(ip, function (err, hosts) {
+	return require('dns').reverse(ip, (err, hosts) => {
 		if (!hosts || !hosts[0]) {
 			if (ip.startsWith('50.')) {
 				hosts = ['comcast.net.res-nohost'];

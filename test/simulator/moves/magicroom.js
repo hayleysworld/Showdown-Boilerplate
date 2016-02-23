@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Magic Room', function () {
 	afterEach(function () {
@@ -47,5 +49,17 @@ describe('Magic Room', function () {
 		battle.choose('p1', 'move 1 mega');
 		battle.choose('p2', 'move 2');
 		assert.strictEqual(battle.p1.active[0].template.speciesid, 'lopunnymega');
+	});
+
+	it('should not prevent Primal Reversion', function () {
+		battle = BattleEngine.Battle.construct();
+		battle.join('p1', 'Guest 1', 1, [
+			{species: "Zapdos", ability: 'pressure', moves: ['voltswitch']},
+			{species: "Groudon", ability: 'drought', item: 'redorb', moves: ['protect']},
+		]);
+		battle.join('p2', 'Guest 2', 1, [{species: "Meowstic", ability: 'prankster', moves: ['magicroom']}]);
+		battle.commitDecisions();
+		battle.choose('p1', 'switch 2');
+		assert.strictEqual(battle.p1.active[0].template.speciesid, 'groudonprimal');
 	});
 });

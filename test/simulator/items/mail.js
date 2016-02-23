@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Mail', function () {
 	afterEach(function () {
@@ -12,7 +14,7 @@ describe('Mail', function () {
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Fennekin', ability: 'magician', moves: ['grassknot']},
 			{species: 'Abra', ability: 'synchronize', moves: ['trick']},
-			{species: 'Lopunny', ability: 'klutz', moves: ['switcheroo']}
+			{species: 'Lopunny', ability: 'klutz', moves: ['switcheroo']},
 		]);
 		battle.commitDecisions();
 		assert.strictEqual(battle.p1.active[0].item, 'mail');

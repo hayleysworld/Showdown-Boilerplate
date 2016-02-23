@@ -1,4 +1,6 @@
-var TreeNode = require('./lib/closure-goog.structs.TreeNode-c8e0b2dcd892.min.js').goog.structs.TreeNode;
+'use strict';
+
+let TreeNode = require('./lib/closure-goog.structs.TreeNode-c8e0b2dcd892.min.js').goog.structs.TreeNode;
 
 const nameMap = {
 	'1': "Single",
@@ -6,17 +8,17 @@ const nameMap = {
 	'3': "Triple",
 	'4': "Quadruple",
 	'5': "Quintuple",
-	'6': "Sextuple"
+	'6': "Sextuple",
 	// Feel free to add more
 };
 
-var Elimination = (function () {
+let Elimination = (() => {
 	function Elimination(maxSubtrees) {
 		maxSubtrees = maxSubtrees || 1;
 		if (typeof maxSubtrees === 'string' && maxSubtrees.toLowerCase() === 'infinity') {
 			maxSubtrees = Infinity;
 		} else if (typeof maxSubtrees !== 'number') {
-			maxSubtrees = parseInt(maxSubtrees, 10);
+			maxSubtrees = parseInt(maxSubtrees);
 		}
 		if (!maxSubtrees || maxSubtrees < 1) maxSubtrees = 1;
 
@@ -57,13 +59,13 @@ var Elimination = (function () {
 		this.users.delete(user);
 		this.users.set(user, {});
 
-		var targetNode;
-		for (var n = 0; n < this.tree.currentLayerLeafNodes.length && !targetNode; ++n) {
+		let targetNode;
+		for (let n = 0; n < this.tree.currentLayerLeafNodes.length && !targetNode; ++n) {
 			if (this.tree.currentLayerLeafNodes[n].getValue().user === user) {
 				targetNode = this.tree.currentLayerLeafNodes[n];
 			}
 		}
-		for (var n = 0; n < this.tree.nextLayerLeafNodes.length && !targetNode; ++n) {
+		for (let n = 0; n < this.tree.nextLayerLeafNodes.length && !targetNode; ++n) {
 			if (this.tree.nextLayerLeafNodes[n].getValue().user === user) {
 				targetNode = this.tree.nextLayerLeafNodes[n];
 			}
@@ -71,8 +73,8 @@ var Elimination = (function () {
 		targetNode.getValue().user = replacementUser;
 	};
 	Elimination.prototype.getUsers = function (remaining) {
-		var users = [];
-		this.users.forEach(function (value, key) {
+		let users = [];
+		this.users.forEach((value, key) => {
 			if (remaining && (value.isEliminated || value.isDisqualified)) return;
 			users.push(key);
 		});
@@ -80,19 +82,19 @@ var Elimination = (function () {
 	};
 
 	Elimination.prototype.generateBracket = function () {
-		this.getUsers().randomize().forEach(function (user) {
+		this.getUsers().randomize().forEach(user => {
 			if (!this.tree) {
 				this.tree = {
 					tree: new TreeNode(null, {user: user}),
 					currentLayerLeafNodes: [],
-					nextLayerLeafNodes: []
+					nextLayerLeafNodes: [],
 				};
 				this.tree.currentLayerLeafNodes.push(this.tree.tree);
 				return;
 			}
-			var targetNode = this.tree.currentLayerLeafNodes.shift();
+			let targetNode = this.tree.currentLayerLeafNodes.shift();
 
-			var newNode = new TreeNode(null, {user: targetNode.getValue().user});
+			let newNode = new TreeNode(null, {user: targetNode.getValue().user});
 			this.tree.nextLayerLeafNodes.push(newNode);
 			targetNode.addChild(newNode);
 
@@ -106,19 +108,19 @@ var Elimination = (function () {
 				this.tree.currentLayerLeafNodes = this.tree.nextLayerLeafNodes;
 				this.tree.nextLayerLeafNodes = [];
 			}
-		}, this);
+		});
 	};
 	Elimination.prototype.getBracketData = function () {
-		var rootNode = {children: []};
+		let rootNode = {children: []};
 		if (this.tree) {
-			var queue = [{fromNode: this.tree.tree, toNode: rootNode}];
+			let queue = [{fromNode: this.tree.tree, toNode: rootNode}];
 			while (queue.length > 0) {
-				var frame = queue.shift();
-				var node = {children: []};
+				let frame = queue.shift();
+				let node = {children: []};
 
 				frame.toNode.children.push(node);
 
-				var fromNodeValues = frame.fromNode.getValue();
+				let fromNodeValues = frame.fromNode.getValue();
 				if (frame.fromNode.isLeaf()) {
 					node.team = fromNodeValues.user || null;
 				} else {
@@ -130,31 +132,31 @@ var Elimination = (function () {
 					}
 				}
 
-				frame.fromNode.forEachChild(function (child) {
+				frame.fromNode.forEachChild(child => {
 					queue.push({fromNode: child, toNode: node});
 				});
 			}
 		}
 
-		var data = {};
+		let data = {};
 		data.type = 'tree';
 		data.rootNode = rootNode.children[0] || null;
 		return data;
 	};
 	Elimination.prototype.freezeBracket = function () {
 		this.isBracketFrozen = true;
-		this.users.forEach(function (user) {
+		this.users.forEach(user => {
 			user.isBusy = false;
 			user.isDisqualified = false;
 			user.loseCount = 0;
 		});
 
 		this.maxSubtrees = Math.min(this.maxSubtrees, this.users.size - 1);
-		for (var t = 1; t < this.maxSubtrees; ++t) {
-			var matchesByDepth = {};
-			var queue = [{node: this.tree.tree, depth: 0}];
+		for (let t = 1; t < this.maxSubtrees; ++t) {
+			let matchesByDepth = {};
+			let queue = [{node: this.tree.tree, depth: 0}];
 			while (queue.length > 0) {
-				var frame = queue.shift();
+				let frame = queue.shift();
 				if (frame.node.isLeaf() || frame.node.getValue().onLoseNode) continue;
 
 				if (!matchesByDepth[frame.depth]) matchesByDepth[frame.depth] = [];
@@ -164,16 +166,16 @@ var Elimination = (function () {
 				queue.push({node: frame.node.getChildAt(1), depth: frame.depth + 1});
 			}
 
-			var newTree = {
+			let newTree = {
 				tree: new TreeNode(null, {fromNode: matchesByDepth[0][0]}),
 				currentLayerLeafNodes: [],
-				nextLayerLeafNodes: []
+				nextLayerLeafNodes: [],
 			};
 			newTree.currentLayerLeafNodes.push(newTree.tree);
 
-			for (var m in matchesByDepth) {
+			for (let m in matchesByDepth) {
 				if (m === '0') continue;
-				var n = 0;
+				let n = 0;
 				for (; n < matchesByDepth[m].length - 1; n += 2) {
 					// Replace old leaf with:
 					//      old leaf --+
@@ -181,14 +183,14 @@ var Elimination = (function () {
 					//              +--+
 					//   new leaf --+
 
-					var oldLeaf = newTree.currentLayerLeafNodes.shift();
+					let oldLeaf = newTree.currentLayerLeafNodes.shift();
 					oldLeaf.addChild(new TreeNode(null, {fromNode: oldLeaf.getValue().fromNode}));
 					delete oldLeaf.getValue().fromNode;
 
-					var newBranch = new TreeNode(null, {});
+					let newBranch = new TreeNode(null, {});
 					oldLeaf.addChild(newBranch);
 
-					var newLeaf = new TreeNode(null, {fromNode: matchesByDepth[m][n]});
+					let newLeaf = new TreeNode(null, {fromNode: matchesByDepth[m][n]});
 					newBranch.addChild(newLeaf);
 					newTree.nextLayerLeafNodes.push(newLeaf);
 
@@ -202,11 +204,11 @@ var Elimination = (function () {
 					//              +-->
 					//   new leaf --+
 
-					var oldLeaf = newTree.currentLayerLeafNodes.shift();
+					let oldLeaf = newTree.currentLayerLeafNodes.shift();
 					oldLeaf.addChild(new TreeNode(null, {fromNode: oldLeaf.getValue().fromNode}));
 					delete oldLeaf.getValue().fromNode;
 
-					var newLeaf = new TreeNode(null, {fromNode: matchesByDepth[m][n]});
+					let newLeaf = new TreeNode(null, {fromNode: matchesByDepth[m][n]});
 					oldLeaf.addChild(newLeaf);
 					newTree.nextLayerLeafNodes.push(newLeaf);
 				}
@@ -215,20 +217,20 @@ var Elimination = (function () {
 				newTree.nextLayerLeafNodes = [];
 			}
 
-			newTree.tree.traverse(function (node) {
+			newTree.tree.traverse(node => {
 				if (node.getValue().fromNode) {
 					node.getValue().fromNode.getValue().onLoseNode = node;
 					delete node.getValue().fromNode;
 				}
 			});
 
-			var newRoot = new TreeNode(null, {});
+			let newRoot = new TreeNode(null, {});
 			newRoot.addChild(this.tree.tree);
 			newRoot.addChild(newTree.tree);
 			this.tree.tree = newRoot;
 		}
 
-		this.tree.tree.traverse(function (node) {
+		this.tree.tree.traverse(node => {
 			if (!node.isLeaf() && node.getChildAt(0).getValue().user && node.getChildAt(1).getValue().user) {
 				node.getValue().state = 'available';
 			}
@@ -243,9 +245,9 @@ var Elimination = (function () {
 		this.users.get(user).isDisqualified = true;
 
 		// The user either has a single available battle or no available battles
-		var match = null;
-		var result;
-		this.tree.tree.traverse(function (node) {
+		let match = null;
+		let result;
+		this.tree.tree.traverse(node => {
 			if (node.getValue().state === 'available') {
 				if (node.getChildAt(0).getValue().user === user) {
 					match = [user, node.getChildAt(1).getValue().user];
@@ -259,7 +261,7 @@ var Elimination = (function () {
 			return !match;
 		});
 		if (match) {
-			var error = this.setMatchResult(match, result);
+			let error = this.setMatchResult(match, result);
 			if (error) {
 				throw new Error("Unexpected " + error + " from setMatchResult([" + match.join(", ") + "], " + result + ")");
 			}
@@ -281,16 +283,16 @@ var Elimination = (function () {
 	Elimination.prototype.getAvailableMatches = function () {
 		if (!this.isBracketFrozen) return 'BracketNotFrozen';
 
-		var matches = [];
-		this.tree.tree.traverse(function (node) {
+		let matches = [];
+		this.tree.tree.traverse(node => {
 			if (node.getValue().state === 'available') {
-				var userA = node.getChildAt(0).getValue().user;
-				var userB = node.getChildAt(1).getValue().user;
+				let userA = node.getChildAt(0).getValue().user;
+				let userB = node.getChildAt(1).getValue().user;
 				if (!this.users.get(userA).isBusy && !this.users.get(userB).isBusy) {
 					matches.push([userA, userB]);
 				}
 			}
-		}, this);
+		});
 		return matches;
 	};
 	Elimination.prototype.setMatchResult = function (match, result, score) {
@@ -300,8 +302,8 @@ var Elimination = (function () {
 
 		if (!this.users.has(match[0]) || !this.users.has(match[1])) return 'UserNotAdded';
 
-		var targetNode = null;
-		this.tree.tree.traverse(function (node) {
+		let targetNode = null;
+		this.tree.tree.traverse(node => {
 			if (node.getValue().state === 'available' &&
 				node.getChildAt(0).getValue().user === match[0] &&
 				node.getChildAt(1).getValue().user === match[1]) {
@@ -324,21 +326,21 @@ var Elimination = (function () {
 		match.result = result;
 		match.score = score.slice(0);
 
-		var winner = targetNode.getChildAt(result === 'win' ? 0 : 1).getValue().user;
-		var loser = targetNode.getChildAt(result === 'loss' ? 0 : 1).getValue().user;
+		let winner = targetNode.getChildAt(result === 'win' ? 0 : 1).getValue().user;
+		let loser = targetNode.getChildAt(result === 'loss' ? 0 : 1).getValue().user;
 		match.user = winner;
 
-		var loserData = this.users.get(loser);
+		let loserData = this.users.get(loser);
 		++loserData.loseCount;
 		if (loserData.loseCount === this.maxSubtrees) loserData.isEliminated = true;
 
 		if (targetNode.getParent()) {
-			var userA = targetNode.getParent().getChildAt(0).getValue().user;
-			var userB = targetNode.getParent().getChildAt(1).getValue().user;
+			let userA = targetNode.getParent().getChildAt(0).getValue().user;
+			let userB = targetNode.getParent().getChildAt(1).getValue().user;
 			if (userA && userB) {
 				targetNode.getParent().getValue().state = 'available';
 
-				var error = '';
+				let error = '';
 				if (this.users.get(userA).isDisqualified) {
 					error = this.setMatchResult([userA, userB], 'loss');
 				} else if (this.users.get(userB).isDisqualified) {
@@ -350,7 +352,7 @@ var Elimination = (function () {
 				}
 			}
 		} else if (loserData.loseCount < this.maxSubtrees && !loserData.isDisqualified) {
-			var newRoot = new TreeNode(null, {state: 'available'});
+			let newRoot = new TreeNode(null, {state: 'available'});
 			newRoot.addChild(targetNode);
 			newRoot.addChild(new TreeNode(null, {user: loser}));
 			this.tree.tree = newRoot;
@@ -358,12 +360,12 @@ var Elimination = (function () {
 
 		if (match.onLoseNode) {
 			match.onLoseNode.getValue().user = loser;
-			var userA = match.onLoseNode.getParent().getChildAt(0).getValue().user;
-			var userB = match.onLoseNode.getParent().getChildAt(1).getValue().user;
+			let userA = match.onLoseNode.getParent().getChildAt(0).getValue().user;
+			let userB = match.onLoseNode.getParent().getChildAt(1).getValue().user;
 			if (userA && userB) {
 				match.onLoseNode.getParent().getValue().state = 'available';
 
-				var error = '';
+				let error = '';
 				if (this.users.get(userA).isDisqualified) {
 					error = this.setMatchResult([userA, userB], 'loss');
 				} else if (this.users.get(userB).isDisqualified) {
@@ -384,9 +386,9 @@ var Elimination = (function () {
 	Elimination.prototype.getResults = function () {
 		if (!this.isTournamentEnded()) return 'TournamentNotEnded';
 
-		var results = [];
-		var currentNode = this.tree.tree;
-		for (var n = 0; n < this.maxSubtrees; ++n) {
+		let results = [];
+		let currentNode = this.tree.tree;
+		for (let n = 0; n < this.maxSubtrees; ++n) {
 			results.push([currentNode.getValue().user]);
 			currentNode = currentNode.getChildAt(currentNode.getValue().result === 'loss' ? 0 : 1);
 			if (!currentNode) break;

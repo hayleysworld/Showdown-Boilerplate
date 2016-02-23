@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Follow Me', function () {
 	afterEach(function () {
@@ -7,19 +9,21 @@ describe('Follow Me', function () {
 	});
 
 	it('should redirect single-target moves towards it if it is a valid target', function () {
+		this.timeout(5000);
+
 		battle = BattleEngine.Battle.construct('battle-followme', 'triplescustomgame');
 		battle.join('p1', 'Guest 1', 1, [
 			{species: 'Clefable', ability: 'unaware', moves: ['followme']},
 			{species: 'Clefairy', ability: 'unaware', moves: ['calmmind']},
-			{species: 'Cleffa', ability: 'unaware', moves: ['calmmind']}
+			{species: 'Cleffa', ability: 'unaware', moves: ['calmmind']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Abra', ability: 'synchronize', moves: ['lowkick']},
 			{species: 'Kadabra', ability: 'synchronize', moves: ['lowkick']},
-			{species: 'Alakazam', ability: 'synchronize', moves: ['lowkick']}
+			{species: 'Alakazam', ability: 'synchronize', moves: ['lowkick']},
 		]);
 		battle.commitDecisions(); // Team Preview
-		var hitCount = 0;
+		let hitCount = 0;
 		battle.on('Damage', battle.getFormat(), function (damage, pokemon) {
 			if (pokemon.template.speciesid === 'clefable') {
 				hitCount++;
@@ -34,11 +38,11 @@ describe('Follow Me', function () {
 		battle = BattleEngine.Battle.construct('battle-followme-self', 'doublescustomgame');
 		battle.join('p1', 'Guest 1', 1, [
 			{species: 'Clefable', ability: 'unaware', moves: ['followme']},
-			{species: 'Clefairy', ability: 'unaware', moves: ['softboiled']}
+			{species: 'Clefairy', ability: 'unaware', moves: ['softboiled']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Alakazam', ability: 'synchronize', moves: ['howl']},
-			{species: 'Kadabra', ability: 'synchronize', moves: ['howl']}
+			{species: 'Kadabra', ability: 'synchronize', moves: ['howl']},
 		]);
 		battle.commitDecisions(); // Team Preview
 		battle.commitDecisions();

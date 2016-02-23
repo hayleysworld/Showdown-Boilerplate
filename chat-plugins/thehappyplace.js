@@ -6,6 +6,8 @@
 * Credits: panpawn, TalkTakesTime, Morfent, and sirDonovan
 */
 
+'use strict';
+
 exports.commands = {
 	quoteoftheday: 'qotd',
 	qotd: function (target, room, user) {
@@ -39,6 +41,6 @@ exports.commands = {
 	quoteofthedayhelp: 'qotdhelp',
 	qotdhelp: [
 		"/qotd - View the current Inspirational Quote of the Day.",
-		"/qotd [quote] - Set the Inspirational Quote of the Day. Requires: # & ~"
-	]
+		"/qotd [quote] - Set the Inspirational Quote of the Day. Requires: # & ~",
+	],
 };

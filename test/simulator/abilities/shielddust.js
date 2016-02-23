@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Shield Dust', function () {
 	afterEach(function () {
@@ -10,11 +12,11 @@ describe('Shield Dust', function () {
 		battle = BattleEngine.Battle.construct('battle-shielddust', 'doublescustomgame');
 		battle.join('p1', 'Guest 1', 1, [
 			{species: 'Latios', ability: 'noguard', moves: ['snarl']},
-			{species: 'Latias', ability: 'levitate', moves: ['roost']}
+			{species: 'Latias', ability: 'levitate', moves: ['roost']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Xerneas', ability: 'shielddust', moves: ['roost']},
-			{species: 'Yveltal', ability: 'pressure', moves: ['roost']}
+			{species: 'Yveltal', ability: 'pressure', moves: ['roost']},
 		]);
 		battle.commitDecisions(); // Team Preview
 		battle.commitDecisions();
@@ -36,7 +38,7 @@ describe('Shield Dust', function () {
 		battle.join('p2', 'Guest 2', 1, [{species: 'Clefable', ability: 'shielddust', moves: ['cottonguard']}]);
 		battle.on('ModifyMove', battle.getFormat(), function (move) {
 			if (move.secondaries) {
-				for (var i = 0; i < move.secondaries.length; i++) {
+				for (let i = 0; i < move.secondaries.length; i++) {
 					move.secondaries[i].chance = 100;
 				}
 			}

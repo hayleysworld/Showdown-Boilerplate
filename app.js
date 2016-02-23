@@ -22,7 +22,11 @@
  *
  * Tools - from tools.js
  *
- *   Handles getting data about Pokemon, items, etc. *
+ *   Handles getting data about Pokemon, items, etc.
+ *
+ * Ladders - from ladders.js and ladders-remote.js
+ *
+ *   Handles Elo rating tracking for players.
  *
  * Simulator - from simulator.js
  *
@@ -43,6 +47,11 @@
  * @license MIT license
  */
 
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
 /*********************************************************
  * Make sure we have everything set up correctly
  *********************************************************/
@@ -50,27 +59,14 @@
 // Make sure our dependencies are available, and install them if they
 // aren't
 
-function runNpm(command) {
-	if (require.main !== module) throw new Error("Dependencies unmet");
-
-	command = 'npm ' + command + ' && ' + process.execPath + ' app.js';
-	console.log('Running `' + command + '`...');
-	require('child_process').spawn('sh', ['-c', command], {stdio: 'inherit', detached: true});
-	process.exit(0);
-}
-
-var isLegacyEngine = !(''.includes);
-
-var fs = require('fs');
-var path = require('path');
 try {
 	require('sugar');
-	if (isLegacyEngine) require('es6-shim');
 } catch (e) {
-	runNpm('install --production');
-}
-if (isLegacyEngine && !(''.includes)) {
-	runNpm('update --production');
+	if (require.main !== module) throw new Error("Dependencies unmet");
+
+	let command = 'npm install --production';
+	console.log('Installing dependencies: `' + command + '`...');
+	require('child_process').spawnSync('sh', ['-c', command], {stdio: 'inherit'});
 }
 
 /*********************************************************
@@ -78,20 +74,21 @@ if (isLegacyEngine && !(''.includes)) {
  *********************************************************/
 
 try {
-	global.Config = require('./config/config.js');
+	require.resolve('./config/config.js');
 } catch (err) {
-	if (err.code !== 'MODULE_NOT_FOUND') throw err;
+	if (err.code !== 'MODULE_NOT_FOUND') throw err; // should never happen
 
 	// Copy it over synchronously from config-example.js since it's needed before we can start the server
 	console.log("config.js doesn't exist - creating one with default settings...");
 	fs.writeFileSync(path.resolve(__dirname, 'config/config.js'),
 		fs.readFileSync(path.resolve(__dirname, 'config/config-example.js'))
 	);
+} finally {
 	global.Config = require('./config/config.js');
 }
 
 if (Config.watchconfig) {
-	fs.watchFile(path.resolve(__dirname, 'config/config.js'), function (curr, prev) {
+	fs.watchFile(path.resolve(__dirname, 'config/config.js'), (curr, prev) => {
 		if (curr.mtime <= prev.mtime) return;
 		try {
 			delete require.cache[require.resolve('./config/config.js')];
@@ -102,43 +99,14 @@ if (Config.watchconfig) {
 	});
 }
 
-// Autoconfigure the app when running in cloud hosting environments:
-try {
-	var cloudenv = require('cloud-env');
-	Config.bindaddress = cloudenv.get('IP', Config.bindaddress || '');
-	Config.port = cloudenv.get('PORT', Config.port);
-} catch (e) {}
-
-if (require.main === module && process.argv[2] && parseInt(process.argv[2])) {
-	Config.port = parseInt(process.argv[2]);
-	Config.ssl = null;
-}
-
 /*********************************************************
  * Set up most of our globals
  *********************************************************/
 
-/**
- * Converts anything to an ID. An ID must have only lowercase alphanumeric
- * characters.
- * If a string is passed, it will be converted to lowercase and
- * non-alphanumeric characters will be stripped.
- * If an object with an ID is passed, its ID will be returned.
- * Otherwise, an empty string will be returned.
- */
-global.toId = function (text) {
-	if (text && text.id) {
-		text = text.id;
-	} else if (text && text.userid) {
-		text = text.userid;
-	}
-	if (typeof text !== 'string' && typeof text !== 'number') return '';
-	return ('' + text).toLowerCase().replace(/[^a-z0-9]+/g, '');
-};
-
 global.Monitor = require('./monitor.js');
 
-global.Tools = require('./tools.js').includeFormats();
+global.Tools = require('./tools.js');
+global.toId = Tools.getId;
 
 global.LoginServer = require('./loginserver.js');
 
@@ -148,19 +116,9 @@ global.Users = require('./users.js');
 
 global.Rooms = require('./rooms.js');
 
-Rooms.global.formatListText = Rooms.global.getFormatListText();
-
 global.Tells = require('./tells.js');
 
-global.Database = require('./database.js')(Config.database);
-
-try {
-	global.Seen = JSON.parse(fs.readFileSync('config/seen.json', 'utf8'));
-} catch (e) {
-	if (e instanceof SyntaxError) e.message = 'Malformed JSON in seen.json: \n' + e.message;
-	if (e.code !== 'ENOENT') throw e;
-	global.Seen = {};
-}
+global.Db = require('origindb')('config/db');
 
 delete process.send; // in case we're a child process
 global.Verifier = require('./verifier.js');
@@ -174,24 +132,21 @@ global.Tournaments = require('./tournaments');
 try {
 	global.Dnsbl = require('./dnsbl.js');
 } catch (e) {
-	global.Dnsbl = {query:function () {}, reverse: require('dns').reverse};
+	global.Dnsbl = {query: () => {}, reverse: require('dns').reverse};
 }
 
 global.Cidr = require('./cidr.js');
 
 if (Config.crashguard) {
 	// graceful crash - allow current battles to finish before restarting
-	var lastCrash = 0;
-	process.on('uncaughtException', function (err) {
-		var dateNow = Date.now();
-		var quietCrash = require('./crashlogger.js')(err, 'The main process', true);
-		quietCrash = quietCrash || ((dateNow - lastCrash) <= 1000 * 60 * 5);
-		lastCrash = Date.now();
-		if (quietCrash) return;
-		var stack = ("" + err.stack).escapeHTML().split("\n").slice(0, 2).join("<br />");
+	process.on('uncaughtException', err => {
+		let crashMessage = require('./crashlogger.js')(err, 'The main process');
+		if (crashMessage !== 'lockdown') return;
+		let stack = ("" + err.stack).escapeHTML().split("\n").slice(0, 2).join("<br />");
 		if (Rooms.lobby) {
 			Rooms.lobby.addRaw('<div class="broadcast-red"><b>THE SERVER HAS CRASHED:</b> ' + stack + '<br />Please restart the server.</div>');
-			Rooms.lobby.addRaw('<div class="broadcast-red">You will not be able to talk in the lobby or start new battles until the server restarts.</div>');
+			Rooms.lobby.addRaw('<div class="broadcast-red">You will not be able to start new battles until the server restarts.</div>');
+			Rooms.lobby.update();
 		}
 		Rooms.global.lockdown = true;
 	});
@@ -201,20 +156,39 @@ if (Config.crashguard) {
  * Start networking processes to be connected to
  *********************************************************/
 
-global.Sockets = require('./sockets.js');
+// global.Sockets = require('./sockets.js');
+global.Sockets = require('./sockets-nocluster.js');
+
+exports.listen = function (port, bindAddress, workerCount) {
+	Sockets.listen(port, bindAddress, workerCount);
+};
+
+if (require.main === module) {
+	// if running with node app.js, set up the server directly
+	// (otherwise, wait for app.listen())
+	let port;
+	if (process.argv[2]) {
+		port = parseInt(process.argv[2]); // eslint-disable-line radix
+	}
+	Sockets.listen(port);
+}
 
 /*********************************************************
  * Set up our last global
  *********************************************************/
 
+// Generate and cache the format list.
+Tools.includeFormats();
+Rooms.global.formatListText = Rooms.global.getFormatListText();
+
 global.TeamValidator = require('./team-validator.js');
 
 // load ipbans at our leisure
-fs.readFile(path.resolve(__dirname, 'config/ipbans.txt'), function (err, data) {
+fs.readFile(path.resolve(__dirname, 'config/ipbans.txt'), (err, data) => {
 	if (err) return;
 	data = ('' + data).split("\n");
-	var rangebans = [];
-	for (var i = 0; i < data.length; i++) {
+	let rangebans = [];
+	for (let i = 0; i < data.length; i++) {
 		data[i] = data[i].split('#')[0].trim();
 		if (!data[i]) continue;
 		if (data[i].includes('/')) {
@@ -230,4 +204,4 @@ fs.readFile(path.resolve(__dirname, 'config/ipbans.txt'), function (err, data) {
  * Start up the REPL server
  *********************************************************/
 
-require('./repl.js').start('app', function (cmd) { return eval(cmd); });
+require('./repl.js').start('app', cmd => eval(cmd));

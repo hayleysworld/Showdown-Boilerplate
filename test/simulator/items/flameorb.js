@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Flame Orb', function () {
 	afterEach(function () {
@@ -10,10 +12,10 @@ describe('Flame Orb', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [
 			{species: 'Magikarp', ability: 'swiftswim', item: 'focussash', moves: ['splash']},
-			{species: 'Ursaring', ability: 'guts', item: 'flameorb', moves: ['protect']}
+			{species: 'Ursaring', ability: 'guts', item: 'flameorb', moves: ['protect']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [
-			{species: 'Breloom', ability: 'technician', moves: ['bulletseed']}
+			{species: 'Breloom', ability: 'technician', moves: ['bulletseed']},
 		]);
 		battle.commitDecisions();
 		battle.choose('p1', 'switch 2');
@@ -28,4 +30,3 @@ describe('Flame Orb', function () {
 		assert.strictEqual(battle.p1.active[0].status, 'brn');
 	});
 });
-

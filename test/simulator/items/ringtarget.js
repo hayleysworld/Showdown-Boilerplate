@@ -1,5 +1,7 @@
-var battle;
-var assert = require('assert');
+'use strict';
+
+let battle;
+const assert = require('assert');
 
 describe('Ring Target', function () {
 	afterEach(function () {
@@ -13,7 +15,7 @@ describe('Ring Target', function () {
 			{species: "Thundurus", ability: 'prankster', item: 'ringtarget', moves: ['rest']},
 			{species: "Drifblim", ability: 'unburden', item: 'ringtarget', moves: ['rest']},
 			{species: "Girafarig", ability: 'innerfocus', item: 'ringtarget', moves: ['rest']},
-			{species: "Absol", ability: 'superluck', item: 'ringtarget', moves: ['rest']}
+			{species: "Absol", ability: 'superluck', item: 'ringtarget', moves: ['rest']},
 		]);
 		battle.commitDecisions();
 		assert.ok(battle.log[battle.lastMoveLine + 1].startsWith('|-supereffective|'));
@@ -34,9 +36,16 @@ describe('Ring Target', function () {
 	it('should not affect ability-based immunities', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [{species: "Hariyama", ability: 'guts', moves: ['earthquake']}]);
-		battle.join('p2', 'Guest 2', 1, [{species: "Mismagius", ability: 'levitate', item: 'ringtarget', moves: ['shadowsneak']}]);
+		battle.join('p2', 'Guest 2', 1, [
+			{species: "Mismagius", ability: 'levitate', item: 'ringtarget', moves: ['shadowsneak']},
+			{species: "Rotom-Fan", ability: 'levitate', item: 'ringtarget', moves: ['snore']},
+		]);
 		battle.commitDecisions();
-		assert.ok(battle.log[battle.lastMoveLine + 1].startsWith('|-immune|'));
+		assert.strictEqual(battle.p2.active[0].hp, battle.p2.active[0].maxhp);
+
+		// even if Rotom-Fan
+		battle.choose('p2', 'switch 2');
+		battle.commitDecisions();
 		assert.strictEqual(battle.p2.active[0].hp, battle.p2.active[0].maxhp);
 	});
 });

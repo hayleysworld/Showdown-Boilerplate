@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Pickup', function () {
 	afterEach(function () {
@@ -42,12 +44,12 @@ describe('Pickup', function () {
 		battle = BattleEngine.Battle.construct('battle-pickup-switch', 'doublescustomgame');
 		battle.join('p1', 'Guest 1', 1, [
 			{species: 'Gourgeist', ability: 'pickup', moves: ['shadowsneak']},
-			{species: 'Aggron', ability: 'sturdy', moves: ['rest']}
+			{species: 'Aggron', ability: 'sturdy', moves: ['rest']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Ambipom', ability: 'swarm', moves: ['uturn']},
 			{species: 'Clefable', ability: 'unaware', item: 'ejectbutton', moves: ['followme']},
-			{species: 'Magikarp', ability: 'rattled', moves: ['splash']}
+			{species: 'Magikarp', ability: 'rattled', moves: ['splash']},
 		]);
 		battle.commitDecisions();
 		battle.commitDecisions();
@@ -61,7 +63,7 @@ describe('Pickup', function () {
 		battle.join('p1', 'Guest 1', 1, [{species: 'Gourgeist', ability: 'pickup', moves: ['shadowsneak', 'synthesis']}]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Ambipom', ability: 'swarm', item: 'buggem', moves: ['uturn']},
-			{species: 'Dusknoir', ability: 'pressure', item: 'ejectbutton', moves: ['painsplit']}
+			{species: 'Dusknoir', ability: 'pressure', item: 'ejectbutton', moves: ['painsplit']},
 		]);
 		battle.choose('p1', 'move synthesis');
 		battle.commitDecisions();
@@ -84,11 +86,11 @@ describe('Pickup', function () {
 		battle = BattleEngine.Battle.construct('battle-pickup-ally', 'doublescustomgame');
 		battle.join('p1', 'Guest 1', 1, [
 			{species: 'Ambipom', ability: 'pickup', moves: ['protect']},
-			{species: 'Aron', level: 1, ability: 'sturdy', item: 'berryjuice', moves: ['followme']}
+			{species: 'Aron', level: 1, ability: 'sturdy', item: 'berryjuice', moves: ['followme']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Ambipom', ability: 'technician', moves: ['return']},
-			{species: 'Arcanine', ability: 'flashfire', moves: ['protect']}
+			{species: 'Arcanine', ability: 'flashfire', moves: ['protect']},
 		]);
 		battle.commitDecisions();
 		battle.commitDecisions();
@@ -100,12 +102,12 @@ describe('Pickup', function () {
 		battle.join('p1', 'Guest 1', 1, [
 			{species: 'Ambipom', ability: 'pickup', moves: ['protect']},
 			{species: 'Regirock', ability: 'sturdy', moves: ['curse']},
-			{species: 'Arcanine', ability: 'flashfire', item: 'normalgem', moves: ['extremespeed']}
+			{species: 'Arcanine', ability: 'flashfire', item: 'normalgem', moves: ['extremespeed']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: 'Arcanine', ability: 'flashfire', item: 'firegem', moves: ['flamecharge']},
 			{species: 'Aggron', ability: 'sturdy', moves: ['rest']},
-			{species: 'Magikarp', ability: 'swiftswim',  moves: ['splash']}
+			{species: 'Magikarp', ability: 'swiftswim', moves: ['splash']},
 		]);
 		battle.commitDecisions();
 		battle.commitDecisions();

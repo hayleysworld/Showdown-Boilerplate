@@ -1,3 +1,5 @@
+'use strict';
+
 // The server port - the port to run Pokemon Showdown under
 exports.port = 8000;
 
@@ -58,6 +60,13 @@ exports.loginserverpublickey = "-----BEGIN RSA PUBLIC KEY-----\n" +
 	to: 'admin@example.com',
 	subject: 'Pokemon Showdown has crashed!'
 };**/
+
+// basic name filter - removes characters used for impersonation
+//   The basic name filter removes Unicode characters that can be used for impersonation,
+//   like the upside-down exclamation mark (looks like an i), the Greek omicron (looks
+//   like an o), etc. Disable only if you need one of the alphabets it disables, such as
+//   Greek or Cyrillic.
+exports.disablebasicnamefilter = false;
 
 // report joins and leaves - shows messages like "<USERNAME> joined"
 //   Join and leave messages are small and consolidated, so there will never
@@ -163,17 +172,6 @@ exports.tellsexpiryage = 1000 * 60 * 60 * 24 * 7;
 // to send offline messages.
 exports.tellrank = '+';
 
-// database use to store user's money, tickets, etc.
-exports.database = 'lowdb';
-
-// mysql configuration to create the connection to the database.
-exports.mysql = {
-	host: 'localhost',
-	user: 'me',
-	password: 'secret',
-	database: 'my_db'
-};
-
 // Custom avatars.
 // This allows you to specify custom avatar images for users on your server.
 // Place custom avatar files under the /config/avatars/ directory.
@@ -204,7 +202,7 @@ exports.appealurl = '';
 // replsocketprefix - the prefix for the repl sockets to be listening on
 // replsocketmode - the file mode bits to use for the repl sockets
 exports.replsocketprefix = './logs/repl/';
-exports.replsocketmode = 0600;
+exports.replsocketmode = 0o600;
 
 // permissions and groups:
 //   Each entry in `grouplist' is a seperate group. Some of the members are "special"
@@ -261,7 +259,7 @@ exports.grouplist = [
 		id: "admin",
 		name: "Administrator",
 		root: true,
-		globalonly: true
+		globalonly: true,
 	},
 	{
 		symbol: '&',
@@ -282,7 +280,7 @@ exports.grouplist = [
 		potd: true,
 		disableladder: true,
 		globalonly: true,
-		tournamentsmanagement: true
+		tournamentsmanagement: true,
 	},
 	{
 		symbol: '#',
@@ -296,7 +294,7 @@ exports.grouplist = [
 		declare: true,
 		modchatall: true,
 		roomonly: true,
-		tournamentsmanagement: true
+		tournamentsmanagement: true,
 	},
 	{
 		symbol: '\u2605',
@@ -307,7 +305,7 @@ exports.grouplist = [
 		modchat: true,
 		roomonly: true,
 		editroom: true,
-		joinbattle: true
+		joinbattle: true,
 	},
 	{
 		symbol: '@',
@@ -321,7 +319,7 @@ exports.grouplist = [
 		forcerename: true,
 		ip: true,
 		alts: '@u',
-		tournaments: true
+		tournaments: true,
 	},
 	{
 		symbol: '%',
@@ -342,7 +340,7 @@ exports.grouplist = [
 		receiveauthmessages: true,
 		tournamentsmoderation: true,
 		jeopardy: true,
-		joinbattle: true
+		joinbattle: true,
 	},
 	{
 		symbol: '+',
@@ -350,10 +348,10 @@ exports.grouplist = [
 		name: "Voice",
 		inherit: ' ',
 		alts: 's',
-		broadcast: true
+		broadcast: true,
 	},
 	{
 		symbol: ' ',
-		ip: 's'
-	}
+		ip: 's',
+	},
 ];

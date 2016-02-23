@@ -1,5 +1,7 @@
-var battle;
-var assert = require('assert');
+'use strict';
+
+let battle;
+const assert = require('assert');
 
 describe('Iron Ball', function () {
 	afterEach(function () {
@@ -10,7 +12,7 @@ describe('Iron Ball', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [{species: "Smeargle", ability: 'owntempo', item: 'ironball', moves: ['bestow']}]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Aerodactyl", ability: 'pressure', moves: ['stealthrock']}]);
-		var speed = battle.p2.active[0].getStat('spe');
+		let speed = battle.p2.active[0].getStat('spe');
 		battle.commitDecisions();
 		assert.strictEqual(battle.p2.active[0].getStat('spe'), battle.modify(speed, 0.5));
 	});
@@ -20,7 +22,7 @@ describe('Iron Ball', function () {
 		battle.join('p1', 'Guest 1', 1, [{species: "Smeargle", ability: 'owntempo', item: 'laggingtail', moves: ['earthquake']}]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: "Aerodactyl", ability: 'pressure', item: 'ironball', moves: ['stealthrock']},
-			{species: "Tropius", ability: 'harvest', item: 'ironball', moves: ['leechseed']}
+			{species: "Tropius", ability: 'harvest', item: 'ironball', moves: ['leechseed']},
 		]);
 		battle.commitDecisions();
 		// Earthquake neutral on Aerodactyl
@@ -38,7 +40,7 @@ describe('Iron Ball', function () {
 		battle.join('p1', 'Guest 1', 1, [{species: "Smeargle", ability: 'owntempo', item: 'laggingtail', moves: ['earthquake', 'gravity']}]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: "Aerodactyl", ability: 'shellarmor', item: 'ironball', moves: ['stealthrock']},
-			{species: "Tropius", ability: 'shellarmor', item: 'ironball', moves: ['leechseed']}
+			{species: "Tropius", ability: 'shellarmor', item: 'ironball', moves: ['leechseed']},
 		]);
 		// Set up Gravity
 		battle.choose('p1', 'move 2');
@@ -60,7 +62,7 @@ describe('Iron Ball', function () {
 		battle.join('p1', 'Guest 1', 1, [{species: "Smeargle", ability: 'owntempo', item: 'laggingtail', moves: ['earthquake']}]);
 		battle.join('p2', 'Guest 2', 1, [
 			{species: "Rotom", ability: 'levitate', item: 'ironball', moves: ['rest']},
-			{species: "Parasect", ability: 'levitate', item: 'ironball', moves: ['rest']}
+			{species: "Parasect", ability: 'levitate', item: 'ironball', moves: ['rest']},
 		]);
 		battle.commitDecisions();
 		assert.ok(battle.log[battle.lastMoveLine + 1].startsWith('|-supereffective|'));

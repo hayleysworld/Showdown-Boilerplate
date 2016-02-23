@@ -1,5 +1,7 @@
-var assert = require('assert');
-var battle;
+'use strict';
+
+const assert = require('assert');
+let battle;
 
 describe('Delta Stream', function () {
 	afterEach(function () {
@@ -17,7 +19,7 @@ describe('Delta Stream', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [{species: "Tornadus", ability: 'deltastream', item: 'weaknesspolicy', moves: ['recover']}]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Smeargle", ability: 'owntempo', moves: ['thundershock', 'powdersnow', 'powergem']}]);
-		for (var i = 0; i < 3; i++) {
+		for (let i = 0; i < 3; i++) {
 			battle.choose('p2', 'move ' + i);
 			battle.commitDecisions();
 			assert.strictEqual(battle.p1.active[0].boosts.atk, 0);
@@ -42,9 +44,9 @@ describe('Delta Stream', function () {
 			{species: "Kyogre", ability: 'drizzle', moves: ['raindance']},
 			{species: "Groudon", ability: 'drought', moves: ['sunnyday']},
 			{species: "Tyranitar", ability: 'sandstream', moves: ['sandstorm']},
-			{species: "Abomasnow", ability: 'snowwarning', moves: ['hail']}
+			{species: "Abomasnow", ability: 'snowwarning', moves: ['hail']},
 		]);
-		for (var i = 2; i <= 5; i++) {
+		for (let i = 2; i <= 5; i++) {
 			battle.choose('p1', 'switch ' + i);
 			battle.commitDecisions();
 			assert.ok(battle.isWeather('deltastream'));
@@ -57,7 +59,7 @@ describe('Delta Stream', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [
 			{species: "Rayquaza", ability: 'deltastream', moves: ['helpinghand']},
-			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']}
+			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Lugia", ability: 'pressure', moves: ['roost']}]);
 		battle.choose('p1', 'switch 2');
@@ -69,7 +71,7 @@ describe('Delta Stream', function () {
 		battle = BattleEngine.Battle.construct();
 		battle.join('p1', 'Guest 1', 1, [
 			{species: "Rayquaza", ability: 'deltastream', moves: ['helpinghand']},
-			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']}
+			{species: "Ho-Oh", ability: 'pressure', moves: ['roost']},
 		]);
 		battle.join('p2', 'Guest 2', 1, [{species: "Rayquaza", ability: 'deltastream', moves: ['bulkup']}]);
 		battle.choose('p1', 'switch 2');
