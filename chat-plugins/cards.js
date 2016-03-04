@@ -454,3 +454,4 @@ exports.commands = {
 				'<li>/card transfer [user name],[card id] - Transfers a card from your showcase to the other user.</li><br />' +
 				'<li>/card showcase (user name) - Shows a users collection of cards.</li><br />' +
 				'<li>/card ladder - Shows points ranking for cards.</li></ul>'],
+};
