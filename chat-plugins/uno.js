@@ -1,8 +1,3 @@
-+/*
- +	UNO Game for PS
- +
- +	by sparkychild
- +*/
  +'use strict';
  +const deck = ["R1",
  +	"R2",
