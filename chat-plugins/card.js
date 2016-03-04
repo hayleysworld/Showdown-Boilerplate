@@ -12,12 +12,12 @@ var colors = {
 };
 
 var shop = [ //Actual shop display
-	['XY-Base', 'Get three cards from the first pack released in the Pokemon XY set.', 10],
-	['XY-Flashfire', 'Get three cards from the Flashfire pack released in the Pokemon XY set.', 10],
-	['XY-Furious Fists', 'Get three cards from the Furious Fists pack released in the Pokemon XY set.', 10],
-	['XY-Phantom Forces', 'Get three cards from the Phantom Forces pack released in the Pokemon XY set.', 10],
-	['XY-Primal Clash', 'Get three cards from the Primal Clash pack released in the Pokemon XY set.', 10],
-	['XY-Roaring Skies', 'Get three cards from the Roaring Skies pack released in the Pokemon XY set.', 10],
+	['XY-Base', 'Get three cards from the first pack released in the Pokemon XY set.', 7],
+	['XY-Flashfire', 'Get three cards from the Flashfire pack released in the Pokemon XY set.', 7],
+	['XY-Furious Fists', 'Get three cards from the Furious Fists pack released in the Pokemon XY set.', 7],
+	['XY-Phantom Forces', 'Get three cards from the Phantom Forces pack released in the Pokemon XY set.', 7],
+	['XY-Primal Clash', 'Get three cards from the Primal Clash pack released in the Pokemon XY set.', 7],
+	['XY-Roaring Skies', 'Get three cards from the Roaring Skies pack released in the Pokemon XY set.', 7],
 	//['UU-Pack', 'Get three cards from the UU tier.', 10]
 ];
 //Shop used in cardCache to reduce RAM usage of card caching
