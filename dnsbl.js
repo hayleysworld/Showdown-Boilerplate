@@ -14,7 +14,7 @@
 
 'use strict';
 
-const BLOCKLISTS = ['sbl.spamhaus.org', 'rbl.efnetrbl.org', 'zenmate.proxy-nohos', 'secured-by.zenmate.com', 'dynamic.voo.be'];
+const BLOCKLISTS = ['sbl.spamhaus.org', 'rbl.efnetrbl.org', 'zenmate.proxy-nohos', 'secured-by.zenmate.com', 'dynamic.voo.be', 'zenmate.proxy-nohost'];
 
 let dns = require('dns');
 
