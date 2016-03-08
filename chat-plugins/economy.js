@@ -12,6 +12,7 @@ let shop = [
 	['Staff Help', 'Staff member will help set up roomintros and anything else needed in a room. Response may not be immediate.', 1],
 	['Icon', 'Buy a custom icon that can be applied to the rooms you want. You must take into account that the provided image should be 32 x 32', 15],
 	['Room', 'Buys a chatroom for you to own. (within reason, can be refused)', 35],
+	['Gijinka', 'Buys a Gijinka profile made by our own KIttenEatinGlue. Please PM her or Ghost of Solomon if purchased or for more info', 10]
 ];
 
 let shopDisplay = getShopDisplay(shop);
