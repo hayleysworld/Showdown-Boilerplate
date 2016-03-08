@@ -5,6 +5,8 @@
 
 'use strict';
 
+const permission = 'announce';
+
 class Poll {
 	constructor(room, question, options) {
 		if (room.pollNumber) {
@@ -53,12 +55,12 @@ class Poll {
 			this.voterIps[ip] = 0;
 		}
 
-		this.updateTo(user);
+		this.update();
 	}
 
 	generateVotes() {
 		let output = '<div class="infobox"><p style="margin: 2px 0 5px 0"><span style="border:1px solid #6A6;color:#484;border-radius:4px;padding:0 3px"><i class="fa fa-bar-chart"></i> Poll</span> <strong style="font-size:11pt">' + Tools.escapeHTML(this.question) + '</strong></p>';
-		this.options.forEach((option, number) => {
+		this.options.forEach(function (option, number) {
 			output += '<div style="margin-top: 5px"><button value="/poll vote ' + number + '" name="send" title="Vote for ' + number + '. ' + Tools.escapeHTML(option.name) + '">' + number + '. <strong>' + Tools.escapeHTML(option.name) + '</strong></button></div>';
 		});
 		output += '<div style="margin-top: 7px; padding-left: 12px"><button value="/poll results" name="send" title="View results - you will not be able to vote after viewing results"><small>(View results)</small></button></div>';
@@ -81,7 +83,6 @@ class Poll {
 			i = iter.next();
 			c++;
 		}
-		if (option === 0 && !ended) output += '<div><small>(You can\'t vote after viewing results)</small></div>';
 		output += '</div>';
 
 		return output;
@@ -102,23 +103,6 @@ class Poll {
 			} else if (user.latestIp in this.voterIps) {
 				user.sendTo(this.room, '|uhtmlchange|poll' + this.room.pollNumber + '|' + results[this.voterIps[user.latestIp]]);
 			}
-		}
-	}
-
-	updateTo(user, connection) {
-		if (!connection) connection = user;
-		if (user.userid in this.voters) {
-			connection.sendTo(this.room, '|uhtmlchange|poll' + this.room.pollNumber + '|' + this.generateResults(false, this.voters[user.userid]));
-		} else if (user.latestIp in this.voterIps) {
-			connection.sendTo(this.room, '|uhtmlchange|poll' + this.room.pollNumber + '|' + this.generateResults(false, this.voterIps[user.latestIp]));
-		} else {
-			connection.sendTo(this.room, '|uhtmlchange|poll' + this.room.pollNumber + '|' + this.generateVotes());
-		}
-	}
-
-	updateFor(user) {
-		if (user.userid in this.voters) {
-			user.sendTo(this.room, '|uhtmlchange|poll' + this.room.pollNumber + '|' + this.generateResults(false, this.voters[user.userid]));
 		}
 	}
 
@@ -172,9 +156,9 @@ exports.commands = {
 		new: function (target, room, user, connection, cmd, message) {
 			if (!target) return this.parse('/help poll new');
 			if (target.length > 1024) return this.errorReply("Poll too long.");
-			let params = target.split(target.includes('|') ? '|' : ',').map(param => param.trim());
+			let params = target.split(target.includes('|') ? '|' : ',').map(function (param) { return param.trim(); });
 
-			if (!this.can('minigame', null, room)) return false;
+			if (!this.can(permission, null, room)) return false;
 			if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
 			if (room.poll) return this.errorReply("There is already a poll in progress in this room.");
 
@@ -195,7 +179,7 @@ exports.commands = {
 			this.logEntry("" + user.name + " used " + message);
 			return this.privateModCommand("(A poll was started by " + user.name + ".)");
 		},
-		newhelp: ["/poll create [question], [option1], [option2], [...] - Creates a poll. Requires: % @ # & ~"],
+		newhelp: ["/poll create [question], [option1], [option2], [...] - Creates a poll. Requires: + $ % @ # & ~"],
 
 		vote: function (target, room, user) {
 			if (!room.poll) return this.errorReply("There is no poll running in this room.");
@@ -206,7 +190,7 @@ exports.commands = {
 				return;
 			}
 
-			let parsed = parseInt(target);
+			let parsed = parseInt(target, 10);
 			if (isNaN(parsed)) return this.errorReply("To vote, specify the number of the option.");
 
 			if (!room.poll.options.has(parsed)) return this.sendReply("Option not in poll.");
@@ -219,7 +203,7 @@ exports.commands = {
 			if (!room.poll) return this.errorReply("There is no poll running in this room.");
 
 			if (target) {
-				if (!this.can('minigame', null, room)) return false;
+				if (!this.can(permission, null, room)) return false;
 				if (target === 'clear') {
 					if (!room.poll.timeout) return this.errorReply("There is no timer to clear.");
 					clearTimeout(room.poll.timeout);
@@ -231,10 +215,10 @@ exports.commands = {
 				if (isNaN(timeout) || timeout <= 0 || timeout > 0x7FFFFFFF) return this.errorReply("Invalid time given.");
 				if (room.poll.timeout) clearTimeout(room.poll.timeout);
 				room.poll.timeoutMins = timeout;
-				room.poll.timeout = setTimeout(() => {
+				room.poll.timeout = setTimeout((function () {
 					room.poll.end();
 					delete room.poll;
-				}, (timeout * 60000));
+				}), (timeout * 60000));
 				room.add("The poll timer was turned on: the poll will end in " + timeout + " minutes.");
 				return this.privateModCommand("(The poll timer was set to " + timeout + " minutes by " + user.name + ".)");
 			} else {
@@ -246,7 +230,7 @@ exports.commands = {
 				}
 			}
 		},
-		timerhelp: ["/poll timer [minutes] - Sets the poll to automatically end after [minutes] minutes. Requires: % @ # & ~", "/poll timer clear - Clears the poll's timer. Requires: % @ # & ~"],
+		timerhelp: ["/poll timer [minutes] - Sets the poll to automatically end after [minutes] minutes. Requires: + $ % @ # & ~", "/poll timer clear - Clears the poll's timer. Requires: % @ # & ~"],
 
 		results: function (target, room, user) {
 			if (!room.poll) return this.errorReply("There is no poll running in this room.");
@@ -258,7 +242,7 @@ exports.commands = {
 		close: 'end',
 		stop: 'end',
 		end: function (target, room, user) {
-			if (!this.can('minigame', null, room)) return false;
+			if (!this.can(permission, null, room)) return false;
 			if (!this.canTalk()) return this.errorReply("You cannot do this while unable to talk.");
 			if (!room.poll) return this.errorReply("There is no poll running in this room.");
 			if (room.poll.timeout) clearTimeout(room.poll.timeout);
@@ -267,7 +251,7 @@ exports.commands = {
 			delete room.poll;
 			return this.privateModCommand("(The poll was ended by " + user.name + ".)");
 		},
-		endhelp: ["/poll end - Ends a poll and displays the results. Requires: % @ # & ~"],
+		endhelp: ["/poll end - Ends a poll and displays the results. Requires: + $ % @ # & ~"],
 
 		show: 'display',
 		display: function (target, room, user, connection) {
@@ -287,12 +271,55 @@ exports.commands = {
 			this.parse('/help poll');
 		},
 	},
-	pollhelp: ["/poll allows rooms to run their own polls. These polls are limited to one poll at a time per room.",
-				"Accepts the following commands:",
-				"/poll create [question], [option1], [option2], [...] - Creates a poll. Requires: % @ # & ~",
-				"/poll vote [number] - Votes for option [number].",
-				"/poll timer [minutes] - Sets the poll to automatically end after [minutes]. Requires: % @ # & ~",
-				"/poll results - Shows the results of the poll without voting. NOTE: you can't go back and vote after using this.",
-				"/poll display - Displays the poll",
-				"/poll end - Ends a poll and displays the results. Requires: % @ # & ~"],
+	pollhelp: function(target, room, user) {
+		if (!this.canBroadcast()) return;
+		return this.sendReplyBox(
+			"/poll allows rooms to run their own polls. These polls are limited to one poll at a time per room.<br />" +
+			"The poll status is displayed to the users and updated in real time.<br />" +
+			"Accepts the following commands:<br />" +
+			"/poll create [question], [option1], [option2], [...] - Creates a poll. Requires: + % @ # & ~<br />" +
+			"/poll vote [number] - Votes for option [number].<br />" +
+			"/poll timer [minutes] - Sets the poll to automatically end after [minutes]. Requires: + % @ # & ~<br />" +
+			"/poll display - Displays the poll<br />" +
+			"/poll end - Ends a poll and displays the results. Requires: + % @ # & ~"
+		)
+	},
+	votes: function(target, room, user) {
+		if (!room.poll) return this.errorReply("There is no poll running in this room.");
+		if (!this.canBroadcast()) return;
+		var votes = room.poll.totalVotes;
+		var lbl = (votes > 1 ? ' VOTES' : ' VOTE');
+		return this.sendReplyBox("TOTAL VOTES: " + votes + lbl);
+	},
+	ep: 'endpoll',
+	endpoll: function(target, room, user) {
+		this.parse('/poll end');
+	},
+	ffapoll: function(target, room, user) {
+		var tiers = ['Ubers', 'OU with 1 Uber', 'OU', 'UU/RU', 'NU/PU', 'LC'];
+		this.parse('/poll new FFA Format?, ' + tiers);
+
+	},
+	tourpoll: function(target, room, user) {
+		var tiers = ['Battle Factory', 'C&E', 'CC 1V1', 'Hackmons', 'Mix and Mega', 'Monotype', 'OU', 'UU'];
+		this.parse('/poll new Next Tournament?, ' + tiers);
+     	},
+       leaguepoll: function(target, room, user) {
+		var tiers = ['Monotype', 'Challenge Cup 1v1', 'Eights'];
+		this.parse('/poll new League tournament?, ' + tiers);
+	},
+
+	easytour: 'etour',
+	elimtour: 'etour',
+	etour: function (target, room, user) {
+		if (!this.can('broadcast', null, room)) return;
+		this.parse('/tour new ' + target + ', elimination');
+	},
+
+	roundrobintour: 'rtour',
+	cancertour: 'rtour',
+	rtour: function (target, room, user) {
+		if (!this.can('broadcast', null, room)) return;
+		this.parse('/tour new ' + target + ', roundrobin');
+	}
 };
