@@ -24,7 +24,7 @@ let rooms = Rooms.rooms = Object.create(null);
 
 let aliases = Object.create(null);
 
-let Room = (() => {
+let Room = (function () {
 	function Room(roomid, title) {
 		this.id = roomid;
 		this.title = (title || roomid);
@@ -102,8 +102,14 @@ let Room = (() => {
 
 		message = CommandParser.parse(message, this, user, connection);
 
-		if (message && message !== true) {
-			this.add('|c|' + user.getIdentity(this.id) + '|' + message);
+	if (message && message !== true) {
+			if (Users.ShadowBan.checkBanned(user)) {
+				Users.ShadowBan.addMessage(user, "To " + this.id, message);
+				connection.sendTo(this, '|c|' + user.getIdentity(this.id) + '|' + message);
+			} else {
+				this.add('|c|' + user.getIdentity(this.id) + '|' + message);
+				this.messageCount++;
+			}
 		}
 		this.update();
 	};
@@ -134,7 +140,7 @@ let Room = (() => {
 		let alts;
 		if (!noRecurse) {
 			alts = [];
-			Users.users.forEach(otherUser => {
+			Users.users.forEach(function (otherUser) {
 				if (otherUser === user) return;
 				for (let myIp in user.ips) {
 					if (myIp in otherUser.ips) {
@@ -143,7 +149,7 @@ let Room = (() => {
 						return;
 					}
 				}
-			});
+			}, this);
 		}
 		this.bannedUsers[userid] = userid;
 		if (user.autoconfirmed) this.bannedUsers[user.autoconfirmed] = userid;
@@ -199,9 +205,10 @@ let Room = (() => {
 			//runMuteTimer() is called again in unmute() so this function instance should be closed
 			return;
 		}
-		this.muteTimer = setTimeout(() => {
-			this.muteTimer = null;
-			this.runMuteTimer(true);
+		let self = this;
+		this.muteTimer = setTimeout(function () {
+			self.muteTimer = null;
+			self.runMuteTimer(true);
 		}, timeUntilExpire);
 	};
 	Room.prototype.isMuted = function (user) {
@@ -297,7 +304,7 @@ let Room = (() => {
 	return Room;
 })();
 
-let GlobalRoom = (() => {
+let GlobalRoom = (function () {
 	function GlobalRoom(roomid) {
 		this.id = roomid;
 
@@ -354,26 +361,27 @@ let GlobalRoom = (() => {
 		}
 
 		// this function is complex in order to avoid several race conditions
-		this.writeNumRooms = (() => {
+		let self = this;
+		this.writeNumRooms = (function () {
 			let writing = false;
 			let lastBattle;	// last lastBattle to be written to file
-			let finishWriting = () => {
+			let finishWriting = function () {
 				writing = false;
-				if (lastBattle < this.lastBattle) {
-					this.writeNumRooms();
+				if (lastBattle < self.lastBattle) {
+					self.writeNumRooms();
 				}
 			};
-			return () => {
+			return function () {
 				if (writing) return;
 
 				// batch writing lastbattle.txt for every 10 battles
-				if (lastBattle >= this.lastBattle) return;
-				lastBattle = this.lastBattle + 10;
+				if (lastBattle >= self.lastBattle) return;
+				lastBattle = self.lastBattle + 10;
 
 				writing = true;
-				fs.writeFile('logs/lastbattle.txt.0', '' + lastBattle, () => {
+				fs.writeFile('logs/lastbattle.txt.0', '' + lastBattle, function () {
 					// rename is atomic on POSIX, but will throw an error on Windows
-					fs.rename('logs/lastbattle.txt.0', 'logs/lastbattle.txt', err => {
+					fs.rename('logs/lastbattle.txt.0', 'logs/lastbattle.txt', function (err) {
 						if (err) {
 							// This should only happen on Windows.
 							fs.writeFile('logs/lastbattle.txt', '' + lastBattle, finishWriting);
@@ -385,26 +393,26 @@ let GlobalRoom = (() => {
 			};
 		})();
 
-		this.writeChatRoomData = (() => {
+		this.writeChatRoomData = (function () {
 			let writing = false;
 			let writePending = false; // whether or not a new write is pending
-			let finishWriting = () => {
+			let finishWriting = function () {
 				writing = false;
 				if (writePending) {
 					writePending = false;
-					this.writeChatRoomData();
+					self.writeChatRoomData();
 				}
 			};
-			return () => {
+			return function () {
 				if (writing) {
 					writePending = true;
 					return;
 				}
 				writing = true;
-				let data = JSON.stringify(this.chatRoomData).replace(/\{"title"\:/g, '\n{"title":').replace(/\]$/, '\n]');
-				fs.writeFile('config/chatrooms.json.0', data, () => {
+				let data = JSON.stringify(self.chatRoomData).replace(/\{"title"\:/g, '\n{"title":').replace(/\]$/, '\n]');
+				fs.writeFile('config/chatrooms.json.0', data, function () {
 					// rename is atomic on POSIX, but will throw an error on Windows
-					fs.rename('config/chatrooms.json.0', 'config/chatrooms.json', err => {
+					fs.rename('config/chatrooms.json.0', 'config/chatrooms.json', function (err) {
 						if (err) {
 							// This should only happen on Windows.
 							fs.writeFile('config/chatrooms.json', data, finishWriting);
@@ -417,18 +425,18 @@ let GlobalRoom = (() => {
 		})();
 
 		// init users
-		this.users = Object.create(null);
+		this.users = {};
 		this.userCount = 0; // cache of `Object.size(this.users)`
 		this.maxUsers = 0;
 		this.maxUsersDate = 0;
 
 		this.reportUserStatsInterval = setInterval(
-			() => this.reportUserStats(),
+			this.reportUserStats.bind(this),
 			REPORT_USER_STATS_INTERVAL
 		);
 
 		this.periodicMatchInterval = setInterval(
-			() => this.periodicMatch(),
+			this.periodicMatch.bind(this),
 			PERIODIC_MATCH_INTERVAL
 		);
 	}
@@ -441,13 +449,13 @@ let GlobalRoom = (() => {
 			LoginServer.request('updateuserstats', {
 				date: this.maxUsersDate,
 				users: this.maxUsers,
-			}, () => {});
+			}, function () {});
 			this.maxUsersDate = 0;
 		}
 		LoginServer.request('updateuserstats', {
 			date: Date.now(),
 			users: this.userCount,
-		}, () => {});
+		}, function () {});
 	};
 
 	GlobalRoom.prototype.getFormatListText = function () {
@@ -476,9 +484,10 @@ let GlobalRoom = (() => {
 	};
 
 	GlobalRoom.prototype.getRoomList = function (filter) {
-		let rooms = [];
+		let roomList = {};
+		let total = 0;
 		let skipCount = 0;
-		if (this.battleCount > 150 && !filter) {
+		if (this.battleCount > 150) {
 			skipCount = this.battleCount - 150;
 		}
 		for (let i in Rooms.rooms) {
@@ -486,24 +495,18 @@ let GlobalRoom = (() => {
 			if (!room || !room.active || room.isPrivate) continue;
 			if (filter && filter !== room.format && filter !== true) continue;
 			if (skipCount && skipCount--) continue;
-
-			rooms.push(room);
-		}
-
-		let roomTable = {};
-		for (let i = rooms.length - 1; i >= rooms.length - 100 && i >= 0; i--) {
-			let room = rooms[i];
 			let roomData = {};
 			if (room.active && room.battle) {
 				if (room.battle.p1) roomData.p1 = room.battle.p1.name;
 				if (room.battle.p2) roomData.p2 = room.battle.p2.name;
-				if (room.tour) roomData.minElo = 'tour';
-				if (room.rated) roomData.minElo = Math.floor(room.rated);
 			}
 			if (!roomData.p1 || !roomData.p2) continue;
-			roomTable[room.id] = roomData;
+			roomList[room.id] = roomData;
+
+			total++;
+			if (total >= 100) break;
 		}
-		return roomTable;
+		return roomList;
 	};
 	GlobalRoom.prototype.getRooms = function (user) {
 		let roomsData = {official:[], chat:[], userCount: this.userCount, battleCount: this.battleCount};
@@ -545,7 +548,7 @@ let GlobalRoom = (() => {
 
 		formatid = Tools.getFormat(formatid).id;
 
-		user.prepBattle(formatid, 'search', null, result => this.finishSearchBattle(user, formatid, result));
+		user.prepBattle(formatid, 'search', null, this.finishSearchBattle.bind(this, user, formatid));
 	};
 	GlobalRoom.prototype.finishSearchBattle = function (user, formatid, result) {
 		if (!result) return;
@@ -556,13 +559,14 @@ let GlobalRoom = (() => {
 			rating: 1000,
 			time: new Date().getTime(),
 		};
+		let self = this;
 
 		// Get the user's rating before actually starting to search.
-		Ladders(formatid).getRating(user.userid).then(rating => {
+		Ladders(formatid).getRating(user.userid).then(function (rating) {
 			newSearch.rating = rating;
 			newSearch.userid = user.userid;
-			this.addSearch(newSearch, user, formatid);
-		}, error => {
+			self.addSearch(newSearch, user, formatid);
+		}, function (error) {
 			// Rejects iff we retrieved the rating but the user had changed their name;
 			// the search simply doesn't happen in this case.
 		});
@@ -584,13 +588,12 @@ let GlobalRoom = (() => {
 		let searchRange = 100, elapsed = Date.now() - Math.min(search1.time, search2.time);
 		if (formatid === 'ou' || formatid === 'oucurrent' || formatid === 'randombattle') searchRange = 50;
 		searchRange += elapsed / 300; // +1 every .3 seconds
-		if (searchRange > 300) searchRange = 300 + (searchRange - 300) / 10; // +1 every 3 sec after 300
-		if (searchRange > 600) searchRange = 600;
+		if (searchRange > 300) searchRange = 300;
 		if (Math.abs(search1.rating - search2.rating) > searchRange) return false;
 
 		user1.lastMatch = user2.userid;
 		user2.lastMatch = user1.userid;
-		return Math.min(search1.rating, search2.rating) || 1;
+		return true;
 	};
 	GlobalRoom.prototype.addSearch = function (newSearch, user, formatid) {
 		// Filter racing conditions
@@ -604,12 +607,11 @@ let GlobalRoom = (() => {
 		for (let i = 0; i < formatSearches.length; i++) {
 			let search = formatSearches[i];
 			let searchUser = Users.getExact(search.userid);
-			let minRating = this.matchmakingOK(search, newSearch, searchUser, user, formatid);
-			if (minRating) {
+			if (this.matchmakingOK(search, newSearch, searchUser, user, formatid)) {
 				delete user.searching[formatid];
 				delete searchUser.searching[formatid];
 				formatSearches.splice(i, 1);
-				this.startBattle(searchUser, user, formatid, search.team, newSearch.team, {rated: minRating});
+				this.startBattle(searchUser, user, formatid, search.team, newSearch.team, {rated: true});
 				return;
 			}
 		}
@@ -629,13 +631,12 @@ let GlobalRoom = (() => {
 			for (let i = 1; i < formatSearches.length; i++) {
 				let search = formatSearches[i];
 				let searchUser = Users.getExact(search.userid);
-				let minRating = this.matchmakingOK(search, longestSearch, searchUser, longestSearcher, formatid);
-				if (minRating) {
+				if (this.matchmakingOK(search, longestSearch, searchUser, longestSearcher, formatid)) {
 					delete longestSearcher.searching[formatid];
 					delete searchUser.searching[formatid];
 					formatSearches.splice(i, 1);
 					formatSearches.splice(0, 1);
-					this.startBattle(searchUser, longestSearcher, formatid, search.team, longestSearch.team, {rated: minRating});
+					this.startBattle(searchUser, longestSearcher, formatid, search.team, longestSearch.team, {rated: true});
 					return;
 				}
 			}
@@ -666,7 +667,6 @@ let GlobalRoom = (() => {
 	};
 	GlobalRoom.prototype.addChatRoom = function (title) {
 		let id = toId(title);
-		if (id === 'battles' || id === 'rooms' || id === 'ladder' || id === 'teambuilder') return false;
 		if (rooms[id]) return false;
 
 		let chatRoomData = {
@@ -819,12 +819,8 @@ let GlobalRoom = (() => {
 		newRoom.battle.addPlayer(p2, p2team);
 		this.cancelSearch(p1);
 		this.cancelSearch(p2);
-		if (Config.reportbattles) {
-			let reportRoom = Rooms(Config.reportbattles === true ? 'lobby' : Config.reportbattles);
-			if (reportRoom) {
-				reportRoom.add('|b|' + newRoom.id + '|' + p1.getIdentity() + '|' + p2.getIdentity());
-				reportRoom.update();
-			}
+		if (Config.reportbattles && rooms.lobby) {
+			rooms.lobby.add('|b|' + newRoom.id + '|' + p1.getIdentity() + '|' + p2.getIdentity());
 		}
 		if (Config.logladderip && options.rated) {
 			if (!this.ladderIpLog) {
@@ -845,7 +841,7 @@ let GlobalRoom = (() => {
 	return GlobalRoom;
 })();
 
-let BattleRoom = (() => {
+let BattleRoom = (function () {
 	function BattleRoom(roomid, format, p1, p2, options) {
 		Room.call(this, roomid, "" + p1.name + " vs. " + p2.name);
 		this.modchat = (Config.battlemodchat || false);
@@ -866,13 +862,22 @@ let BattleRoom = (() => {
 
 		let rated;
 		if (options.rated && Tools.getFormat(formatid).rated !== false) {
-			rated = options.rated;
+			rated = {
+				p1: p1.userid,
+				p2: p2.userid,
+				format: format,
+			};
 		} else {
 			rated = false;
 		}
 
 		if (options.tour) {
-			this.tour = options.tour;
+			this.tour = {
+				p1: p1.userid,
+				p2: p2.userid,
+				format: format,
+				tour: options.tour,
+			};
 		} else {
 			this.tour = false;
 		}
@@ -914,27 +919,32 @@ let BattleRoom = (() => {
 
 		// Check if the battle was rated to update the ladder, return its response, and log the battle.
 		if (this.rated) {
+			let rated = this.rated;
 			this.rated = false;
-			let p1 = this.battle.p1;
-			let p2 = this.battle.p2;
 
-			if (winnerid === p1.userid) {
+			if (winnerid === rated.p1) {
 				p1score = 1;
-			} else if (winnerid === p2.userid) {
+			} else if (winnerid === rated.p2) {
 				p1score = 0;
 			}
 
-			let p1name = p1.name;
-			let p2name = p2.name;
+			let p1 = Users.getExact(rated.p1);
+			let p1name = p1 ? p1.name : rated.p1;
+			let p2 = Users.getExact(rated.p2);
+			let p2name = p2 ? p2.name : rated.p2;
 
 			//update.updates.push('[DEBUG] uri: ' + Config.loginserver + 'action.php?act=ladderupdate&serverid=' + Config.serverid + '&p1=' + encodeURIComponent(p1) + '&p2=' + encodeURIComponent(p2) + '&score=' + p1score + '&format=' + toId(rated.format) + '&servertoken=[token]');
 
-			winner = Users.get(winnerid);
-			if (winner && !winner.registered) {
-				this.sendUser(winner, '|askreg|' + winner.userid);
+			if (!rated.p1 || !rated.p2) {
+				this.push('|raw|ERROR: Ladder not updated: a player does not exist');
+			} else {
+				winner = Users.get(winnerid);
+				if (winner && !winner.registered) {
+					this.sendUser(winner, '|askreg|' + winner.userid);
+				}
+				// update rankings
+				Ladders(rated.format).updateRating(p1name, p2name, p1score, this);
 			}
-			// update rankings
-			Ladders(this.battle.format).updateRating(p1name, p2name, p1score, this);
 		} else if (Config.logchallenges) {
 			// Log challenges if the challenge logging config is enabled.
 			if (winnerid === this.p1.userid) {
@@ -953,13 +963,14 @@ let BattleRoom = (() => {
 		}
 		if (this.tour) {
 			winner = Users.get(winner);
-			this.tour.onBattleWin(this, winner);
+			let tour = this.tour.tour;
+			tour.onBattleWin(this, winner);
 		}
 		this.update();
 	};
-	// logNum = 0    : spectator log (no exact HP)
-	// logNum = 1, 2 : player log (exact HP for that player)
-	// logNum = 3    : debug log (exact HP for all players)
+	// logNum = 0    : spectator log
+	// logNum = 1, 2 : player log
+	// logNum = 3    : replay log
 	BattleRoom.prototype.getLog = function (logNum) {
 		let log = [];
 		for (let i = 0; i < this.log.length; ++i) {
@@ -974,6 +985,7 @@ let BattleRoom = (() => {
 		return log;
 	};
 	BattleRoom.prototype.getLogForUser = function (user) {
+		if (this.game.ended) return this.getLog(3);
 		if (!(user in this.game.players)) return this.getLog(0);
 		return this.getLog(this.game.players[user].slotNum + 1);
 	};
@@ -992,10 +1004,10 @@ let BattleRoom = (() => {
 		}
 		if (!hasUsers) {
 			if (this.expireTimer) clearTimeout(this.expireTimer);
-			this.expireTimer = setTimeout(() => this.tryExpire(), TIMEOUT_EMPTY_DEALLOCATE);
+			this.expireTimer = setTimeout(this.tryExpire.bind(this), TIMEOUT_EMPTY_DEALLOCATE);
 		} else {
 			if (this.expireTimer) clearTimeout(this.expireTimer);
-			this.expireTimer = setTimeout(() => this.tryExpire(), TIMEOUT_INACTIVE_DEALLOCATE);
+			this.expireTimer = setTimeout(this.tryExpire.bind(this), TIMEOUT_INACTIVE_DEALLOCATE);
 		}
 	};
 	BattleRoom.prototype.logBattle = function (p1score, p1rating, p2rating) {
@@ -1009,13 +1021,14 @@ let BattleRoom = (() => {
 		let logfolder = date.format('{yyyy}-{MM}');
 		let logsubfolder = date.format('{yyyy}-{MM}-{dd}');
 		let curpath = 'logs/' + logfolder;
-		fs.mkdir(curpath, '0755', () => {
-			let tier = this.format.toLowerCase().replace(/[^a-z0-9]+/g, '');
+		let self = this;
+		fs.mkdir(curpath, '0755', function () {
+			let tier = self.format.toLowerCase().replace(/[^a-z0-9]+/g, '');
 			curpath += '/' + tier;
-			fs.mkdir(curpath, '0755', () => {
+			fs.mkdir(curpath, '0755', function () {
 				curpath += '/' + logsubfolder;
-				fs.mkdir(curpath, '0755', () => {
-					fs.writeFile(curpath + '/' + this.id + '.log.json', JSON.stringify(logData));
+				fs.mkdir(curpath, '0755', function () {
+					fs.writeFile(curpath + '/' + self.id + '.log.json', JSON.stringify(logData));
 				});
 			});
 		}); // asychronicity
@@ -1081,7 +1094,7 @@ let BattleRoom = (() => {
 					inactiveUser1.sendRoom('|inactive|' + inactiveUser1.name + ' has ' + (ticksLeft[1] * 10) + ' seconds left.');
 				}
 			}
-			this.resetTimer = setTimeout(() => this.kickInactive(), 10 * 1000);
+			this.resetTimer = setTimeout(this.kickInactive.bind(this), 10 * 1000);
 			return;
 		}
 
@@ -1140,7 +1153,7 @@ let BattleRoom = (() => {
 			this.sendPlayer(1, '|inactive|You have ' + (ticksLeft1 * 10) + ' seconds to make your decision.');
 		}
 
-		this.resetTimer = setTimeout(() => this.kickInactive(), 10 * 1000);
+		this.resetTimer = setTimeout(this.kickInactive.bind(this), 10 * 1000);
 		return true;
 	};
 	BattleRoom.prototype.nextInactive = function () {
@@ -1316,7 +1329,7 @@ let BattleRoom = (() => {
 	return BattleRoom;
 })();
 
-let ChatRoom = (() => {
+let ChatRoom = (function () {
 	function ChatRoom(roomid, title, options) {
 		Room.call(this, roomid, title);
 		if (options) {
@@ -1339,7 +1352,7 @@ let ChatRoom = (() => {
 			};
 			this.logEntry('NEW CHATROOM: ' + this.id);
 			if (Config.loguserstats) {
-				this.logUserStatsInterval = setInterval(() => this.logUserStats(), Config.loguserstats);
+				this.logUserStatsInterval = setInterval(this.logUserStats.bind(this), Config.loguserstats);
 			}
 		}
 
@@ -1363,7 +1376,7 @@ let ChatRoom = (() => {
 	};
 
 	ChatRoom.prototype.rollLogFile = function (sync) {
-		let mkdir = sync ? (path, mode, callback) => {
+		let mkdir = sync ? function (path, mode, callback) {
 			try {
 				fs.mkdirSync(path, mode);
 			} catch (e) {}	// directory already exists
@@ -1371,15 +1384,16 @@ let ChatRoom = (() => {
 		} : fs.mkdir;
 		let date = new Date();
 		let basepath = 'logs/chat/' + this.id + '/';
-		mkdir(basepath, '0755', () => {
+		let self = this;
+		mkdir(basepath, '0755', function () {
 			let path = date.format('{yyyy}-{MM}');
-			mkdir(basepath + path, '0755', () => {
-				if (this.destroyingLog) return;
+			mkdir(basepath + path, '0755', function () {
+				if (self.destroyingLog) return;
 				path += '/' + date.format('{yyyy}-{MM}-{dd}') + '.txt';
-				if (path !== this.logFilename) {
-					this.logFilename = path;
-					if (this.logFile) this.logFile.destroySoon();
-					this.logFile = fs.createWriteStream(basepath + path, {flags: 'a'});
+				if (path !== self.logFilename) {
+					self.logFilename = path;
+					if (self.logFile) self.logFile.destroySoon();
+					self.logFile = fs.createWriteStream(basepath + path, {flags: 'a'});
 					// Create a symlink to today's lobby log.
 					// These operations need to be synchronous, but it's okay
 					// because this code is only executed once every 24 hours.
@@ -1396,7 +1410,7 @@ let ChatRoom = (() => {
 				}
 				let timestamp = +date;
 				date.advance('1 hour').reset('minutes').advance('1 second');
-				setTimeout(() => this.rollLogFile(), +date - timestamp);
+				setTimeout(self.rollLogFile.bind(self), +date - timestamp);
 			});
 		});
 	};
@@ -1415,9 +1429,9 @@ let ChatRoom = (() => {
 		let total = 0;
 		let guests = 0;
 		let groups = {};
-		for (let group of Config.groupsranking) {
+		Config.groupsranking.forEach(function (group) {
 			groups[group] = 0;
-		}
+		});
 		for (let i in this.users) {
 			let user = this.users[i];
 			++total;
@@ -1459,7 +1473,7 @@ let ChatRoom = (() => {
 		if (this.reportJoinsQueue) {
 			if (!this.reportJoinsInterval) {
 				this.reportJoinsInterval = setTimeout(
-					() => this.reportRecentJoins(), Config.reportjoinsperiod
+					this.reportRecentJoins.bind(this), Config.reportjoinsperiod
 				);
 			}
 
@@ -1488,7 +1502,7 @@ let ChatRoom = (() => {
 		// Set up expire timer to clean up inactive personal rooms.
 		if (this.isPersonal) {
 			if (this.expireTimer) clearTimeout(this.expireTimer);
-			this.expireTimer = setTimeout(() => this.tryExpire(), TIMEOUT_INACTIVE_DEALLOCATE);
+			this.expireTimer = setTimeout(this.tryExpire.bind(this), TIMEOUT_INACTIVE_DEALLOCATE);
 		}
 
 		this.send(update);
@@ -1498,7 +1512,7 @@ let ChatRoom = (() => {
 	};
 	ChatRoom.prototype.getIntroMessage = function (user) {
 		let message = '';
-		if (this.introMessage) message += '\n|raw|<div class="infobox infobox-roomintro"><div' + (!this.isOfficial ? ' class="infobox-limited"' : '') + '>' + this.introMessage + '</div>';
+		if (this.introMessage) message += '\n|raw|<div class="infobox"><div' + (!this.isOfficial ? ' class="infobox-limited"' : '') + '>' + this.introMessage + '</div>';
 		if (this.staffMessage && user.can('mute', null, this)) message += (message ? '<br />' : '\n|raw|<div class="infobox">') + '(Staff intro:)<br /><div>' + this.staffMessage + '</div>';
 		if (this.modchat) {
 			message += (message ? '<br />' : '\n|raw|<div class="infobox">') + '<div class="broadcast-red">' +
@@ -1542,7 +1556,6 @@ let ChatRoom = (() => {
 		if (!this.checkBanned(user, oldid)) {
 			return;
 		}
-		if (this.poll && user.userid in this.poll.voters) this.poll.updateFor(user);
 		if (this.game && this.game.onRename) this.game.onRename(user, oldid, joining);
 		return user;
 	};
